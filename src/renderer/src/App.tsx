@@ -1,8 +1,10 @@
 import "./App.css";
+import { useMemo, useState } from "react";
 import { useDevices } from "./hooks/useDevices";
 import { useSync } from "./hooks/useSync";
 import { SyncDialog } from "./components/SyncDialog";
 import type { Device } from "../../shared/devices";
+import { autoDetectProfile, PROFILES } from "../../shared/profiles";
 
 export function App(): JSX.Element {
   const { devices, loading, error } = useDevices();
@@ -46,7 +48,7 @@ export function App(): JSX.Element {
                 key={device.id}
                 device={device}
                 disabled={sync.isBusy}
-                onSync={() => sync.start(device)}
+                onSync={(profileId) => sync.start(device, profileId)}
               />
             ))}
           </ul>
@@ -70,8 +72,11 @@ function DeviceCard({
 }: {
   device: Device;
   disabled: boolean;
-  onSync: () => void;
+  onSync: (profileId: string) => void;
 }): JSX.Element {
+  const detected = useMemo(() => autoDetectProfile(device.label), [device.label]);
+  const [profileId, setProfileId] = useState<string>(detected);
+
   return (
     <li className="app__device-card">
       <div className="app__device-info">
@@ -80,11 +85,26 @@ function DeviceCard({
           {formatBytes(device.sizeBytes)} <span className="app__device-meta-sep">·</span>{" "}
           <span className="app__device-mount">{device.mountPath}</span>
         </div>
+        <label className="app__device-profile">
+          <span className="app__device-profile-label">Profile</span>
+          <select
+            className="app__device-profile-select"
+            value={profileId}
+            onChange={(e) => setProfileId(e.target.value)}
+            disabled={disabled}
+          >
+            {PROFILES.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       <button
         className="app__btn app__btn--primary"
         type="button"
-        onClick={onSync}
+        onClick={() => onSync(profileId)}
         disabled={disabled}
       >
         Sync to this device

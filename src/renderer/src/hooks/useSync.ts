@@ -20,7 +20,7 @@ export type SyncState =
 
 export interface UseSyncResult {
   state: SyncState;
-  start: (device: Device) => Promise<void>;
+  start: (device: Device, profileId: string) => Promise<void>;
   confirm: () => Promise<void>;
   cancel: () => Promise<void>;
   close: () => void;
@@ -59,7 +59,7 @@ export function useSync(): UseSyncResult {
     });
   }, []);
 
-  const start = useCallback(async (device: Device): Promise<void> => {
+  const start = useCallback(async (device: Device, profileId: string): Promise<void> => {
     setState({ phase: "picking", device });
     try {
       const folder = await window.api.sync.pickFolder();
@@ -70,6 +70,7 @@ export function useSync(): UseSyncResult {
       const plan = await window.api.sync.buildPlan({
         sourceFolder: folder,
         deviceMountPath: device.mountPath,
+        profileId,
       });
       setState({ phase: "preflight", device, plan });
     } catch (err) {

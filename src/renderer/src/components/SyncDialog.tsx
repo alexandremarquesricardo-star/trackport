@@ -43,6 +43,7 @@ function PreflightView({
 }): JSX.Element {
   const { plan, device } = state;
   const overshoot = plan.totalSizeBytes - plan.freeSpaceBytes;
+  const skippedSize = plan.unsupportedFiles.reduce((acc, f) => acc + f.sizeBytes, 0);
 
   return (
     <>
@@ -52,6 +53,8 @@ function PreflightView({
       </p>
       <p className="sync-dialog__sub">
         To <strong>{device.label}</strong> ({device.mountPath})
+        {" · "}
+        <span className="sync-dialog__profile">{plan.profileLabel}</span>
       </p>
 
       <dl className="sync-dialog__stats">
@@ -69,17 +72,33 @@ function PreflightView({
         </div>
       </dl>
 
-      {!plan.fits && (
+      {plan.unsupportedFiles.length > 0 && (
+        <div className="sync-dialog__note">
+          {plan.unsupportedFiles.length.toLocaleString()} file
+          {plan.unsupportedFiles.length === 1 ? "" : "s"} ({formatBytes(skippedSize)}) skipped —
+          format not supported by <strong>{plan.profileLabel}</strong>. Pick a different profile
+          on the device card if you want to include them.
+        </div>
+      )}
+
+      {!plan.fits && plan.files.length > 0 && (
         <div className="sync-dialog__warn">
           {formatBytes(overshoot)} too large. Remove files from the folder, or pick a smaller
           set. Smart-fit and format conversion ship in a future iteration.
         </div>
       )}
 
-      {plan.files.length === 0 && (
+      {plan.files.length === 0 && plan.unsupportedFiles.length === 0 && (
         <div className="sync-dialog__warn">
           No audio files found in this folder. Supported: MP3, WAV, FLAC, M4A, AAC, WMA, OGG,
           OPUS, AIF, AIFF, APE.
+        </div>
+      )}
+
+      {plan.files.length === 0 && plan.unsupportedFiles.length > 0 && (
+        <div className="sync-dialog__warn">
+          Every audio file in this folder is unsupported by <strong>{plan.profileLabel}</strong>.
+          Pick a less restrictive profile on the device card.
         </div>
       )}
 

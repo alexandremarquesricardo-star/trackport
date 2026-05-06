@@ -25,7 +25,19 @@ export interface SyncPlan {
   id: SyncPlanId;
   sourceFolder: string;
   deviceMountPath: string;
+  /** Files that will be copied (passed the profile's format filter). */
   files: AudioFile[];
+  /**
+   * Files that were found in the source folder but skipped because the
+   * selected device profile doesn't list their extension as supported.
+   * The renderer surfaces this so the user understands why a count
+   * decreased after picking a stricter profile.
+   */
+  unsupportedFiles: AudioFile[];
+  /** Profile id at the time the plan was built (for display). */
+  profileId: string;
+  /** Profile label at the time the plan was built (for display). */
+  profileLabel: string;
   totalSizeBytes: number;
   freeSpaceBytes: number;
   fits: boolean;
@@ -54,7 +66,11 @@ export interface SyncApi {
   /** Open a native folder picker. Resolves to the chosen path or null on cancel. */
   pickFolder: () => Promise<string | null>;
   /** Scan the source, query free space on the device, and return a plan. */
-  buildPlan: (input: { sourceFolder: string; deviceMountPath: string }) => Promise<SyncPlan>;
+  buildPlan: (input: {
+    sourceFolder: string;
+    deviceMountPath: string;
+    profileId: string;
+  }) => Promise<SyncPlan>;
   /** Execute a previously built plan. Resolves when the executor finishes (or errors). */
   executePlan: (planId: SyncPlanId) => Promise<void>;
   /** Request cancellation. Effective between files; the in-flight file finishes. */

@@ -158,6 +158,48 @@
   color: #6b7280;
 }
 
+.app__device-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.app__device-profile-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.app__device-profile-select {
+  font-family: inherit;
+  font-size: 13px;
+  color: #e6e8ee;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 5px 8px;
+  cursor: pointer;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.app__device-profile-select:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.app__device-profile-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.app__device-profile-select option {
+  background: #11141b;
+  color: #e6e8ee;
+}
+
 .app__btn {
   font-size: 15px;
   font-weight: 600;
