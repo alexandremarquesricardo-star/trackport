@@ -60,6 +60,7 @@ export function App(): JSX.Element {
         onConfirm={sync.confirm}
         onCancel={sync.cancel}
         onClose={sync.close}
+        onApplyFit={sync.applyFit}
       />
     </main>
   );

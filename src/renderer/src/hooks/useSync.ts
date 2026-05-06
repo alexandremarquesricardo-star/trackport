@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Device } from "../../../shared/devices";
+import type { FitStrategyId } from "../../../shared/fit";
 import type { SyncPlan, SyncProgress } from "../../../shared/sync";
 
 export type SyncState =
@@ -21,6 +22,7 @@ export type SyncState =
 export interface UseSyncResult {
   state: SyncState;
   start: (device: Device, profileId: string) => Promise<void>;
+  applyFit: (strategy: FitStrategyId) => Promise<void>;
   confirm: () => Promise<void>;
   cancel: () => Promise<void>;
   close: () => void;
@@ -82,6 +84,21 @@ export function useSync(): UseSyncResult {
     }
   }, []);
 
+  const applyFit = useCallback(async (strategy: FitStrategyId): Promise<void> => {
+    const current = stateRef.current;
+    if (current.phase !== "preflight") return;
+    try {
+      const next = await window.api.sync.applyFit(current.plan.id, strategy);
+      setState({ phase: "preflight", device: current.device, plan: next });
+    } catch (err) {
+      setState({
+        phase: "error",
+        device: current.device,
+        message: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }, []);
+
   const confirm = useCallback(async (): Promise<void> => {
     const current = stateRef.current;
     if (current.phase !== "preflight") return;
@@ -113,5 +130,5 @@ export function useSync(): UseSyncResult {
 
   const isBusy = state.phase !== "idle";
 
-  return { state, start, confirm, cancel, close, isBusy };
+  return { state, start, applyFit, confirm, cancel, close, isBusy };
 }

@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { extname } from "node:path";
 import { scanAudioFiles } from "./audio-scan";
 import { getFreeBytes } from "./free-space";
+import { computeFit, type FitStrategyId } from "../../shared/fit";
 import { getProfile } from "../../shared/profiles";
 import { compareNatural } from "../../shared/sort";
 import type { AudioFile, SyncPlan } from "../../shared/sync";
@@ -33,30 +34,58 @@ export async function buildPlan(input: BuildPlanInput): Promise<SyncPlan> {
   const supported = new Set(profile.supportedExtensions.map((e) => e.toLowerCase()));
 
   const allFiles = await scanAudioFiles(input.sourceFolder);
-  const files: AudioFile[] = [];
+  const supportedFiles: AudioFile[] = [];
   const unsupportedFiles: AudioFile[] = [];
   for (const f of allFiles) {
     const ext = extname(f.path).toLowerCase();
-    if (supported.has(ext)) files.push(f);
+    if (supported.has(ext)) supportedFiles.push(f);
     else unsupportedFiles.push(f);
   }
 
-  files.sort((a, b) => compareNatural(a.path, b.path));
+  supportedFiles.sort((a, b) => compareNatural(a.path, b.path));
 
-  const totalSizeBytes = files.reduce((acc, f) => acc + f.sizeBytes, 0);
+  const totalSizeBytes = supportedFiles.reduce((acc, f) => acc + f.sizeBytes, 0);
   const freeSpaceBytes = await getFreeBytes(input.deviceMountPath);
 
   return {
     id: randomUUID(),
     sourceFolder: input.sourceFolder,
     deviceMountPath: input.deviceMountPath,
-    files,
+    files: supportedFiles,
+    allSupportedFiles: supportedFiles,
     unsupportedFiles,
+    oversizedFiles: [],
+    appliedFitStrategy: null,
     profileId: profile.id,
     profileLabel: profile.label,
     preserveOrder: Boolean(profile.quirks.transmissionTimeOrder),
     totalSizeBytes,
     freeSpaceBytes,
     fits: totalSizeBytes <= freeSpaceBytes,
+  };
+}
+
+/**
+ * Apply a fit strategy to a plan. Always runs against allSupportedFiles
+ * (not the currently-mutated `files`), so re-applying a different
+ * strategy gives the right answer instead of compounding.
+ *
+ * Returns a new plan object (same id) so the renderer can rely on
+ * referential change to trigger re-render.
+ */
+export function applyFitToPlan(plan: SyncPlan, strategy: FitStrategyId): SyncPlan {
+  const { keptFiles, droppedFiles } = computeFit(
+    plan.allSupportedFiles,
+    plan.freeSpaceBytes,
+    strategy,
+  );
+  const totalSizeBytes = keptFiles.reduce((acc, f) => acc + f.sizeBytes, 0);
+  return {
+    ...plan,
+    files: keptFiles,
+    oversizedFiles: droppedFiles,
+    appliedFitStrategy: strategy,
+    totalSizeBytes,
+    fits: totalSizeBytes <= plan.freeSpaceBytes,
   };
 }

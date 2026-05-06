@@ -1,10 +1,12 @@
 import { BrowserWindow, dialog, ipcMain } from "electron";
+import type { FitStrategyId } from "../../shared/fit";
 import type { SyncPlan, SyncPlanId, SyncProgress } from "../../shared/sync";
-import { buildPlan, type BuildPlanInput } from "./planner";
+import { applyFitToPlan, buildPlan, type BuildPlanInput } from "./planner";
 import { SyncExecutor } from "./executor";
 
 export const SYNC_PICK_FOLDER = "sync:pick-folder";
 export const SYNC_BUILD_PLAN = "sync:build-plan";
+export const SYNC_APPLY_FIT = "sync:apply-fit";
 export const SYNC_EXECUTE_PLAN = "sync:execute-plan";
 export const SYNC_CANCEL_PLAN = "sync:cancel-plan";
 export const SYNC_PROGRESS = "sync:progress";
@@ -33,6 +35,17 @@ export function registerSyncHandlers(): void {
       const plan = await buildPlan(input);
       plans.set(plan.id, plan);
       return plan;
+    },
+  );
+
+  ipcMain.handle(
+    SYNC_APPLY_FIT,
+    async (_event, planId: SyncPlanId, strategy: FitStrategyId): Promise<SyncPlan> => {
+      const plan = plans.get(planId);
+      if (!plan) throw new Error(`Plan ${planId} not found`);
+      const next = applyFitToPlan(plan, strategy);
+      plans.set(next.id, next);
+      return next;
     },
   );
 

@@ -1,4 +1,5 @@
 import "./SyncDialog.css";
+import { computeFitSuggestions, type FitStrategyId } from "../../../shared/fit";
 import type { SyncState } from "../hooks/useSync";
 
 interface Props {
@@ -6,9 +7,16 @@ interface Props {
   onConfirm: () => void;
   onCancel: () => void;
   onClose: () => void;
+  onApplyFit: (strategy: FitStrategyId) => void;
 }
 
-export function SyncDialog({ state, onConfirm, onCancel, onClose }: Props): JSX.Element | null {
+export function SyncDialog({
+  state,
+  onConfirm,
+  onCancel,
+  onClose,
+  onApplyFit,
+}: Props): JSX.Element | null {
   if (state.phase === "idle" || state.phase === "picking") return null;
 
   const dismissable = state.phase === "done" || state.phase === "error";
@@ -22,7 +30,12 @@ export function SyncDialog({ state, onConfirm, onCancel, onClose }: Props): JSX.
     >
       <div className="sync-dialog" onClick={(e) => e.stopPropagation()}>
         {state.phase === "preflight" && (
-          <PreflightView state={state} onConfirm={onConfirm} onClose={onClose} />
+          <PreflightView
+            state={state}
+            onConfirm={onConfirm}
+            onClose={onClose}
+            onApplyFit={onApplyFit}
+          />
         )}
         {state.phase === "copying" && <CopyingView state={state} onCancel={onCancel} />}
         {state.phase === "done" && <DoneView state={state} onClose={onClose} />}
@@ -36,14 +49,20 @@ function PreflightView({
   state,
   onConfirm,
   onClose,
+  onApplyFit,
 }: {
   state: Extract<SyncState, { phase: "preflight" }>;
   onConfirm: () => void;
   onClose: () => void;
+  onApplyFit: (strategy: FitStrategyId) => void;
 }): JSX.Element {
   const { plan, device } = state;
   const overshoot = plan.totalSizeBytes - plan.freeSpaceBytes;
   const skippedSize = plan.unsupportedFiles.reduce((acc, f) => acc + f.sizeBytes, 0);
+  const fitSuggestions = !plan.fits
+    ? computeFitSuggestions(plan.allSupportedFiles, plan.freeSpaceBytes).filter((s) => s.fits)
+    : [];
+  const oversizedSize = plan.oversizedFiles.reduce((acc, f) => acc + f.sizeBytes, 0);
 
   return (
     <>
@@ -91,8 +110,37 @@ function PreflightView({
 
       {!plan.fits && plan.files.length > 0 && (
         <div className="sync-dialog__warn">
-          {formatBytes(overshoot)} too large. Remove files from the folder, or pick a smaller
-          set. Smart-fit and format conversion ship in a future iteration.
+          <strong>{formatBytes(overshoot)} too large.</strong> Pick a strategy below, or close
+          and trim the source folder.
+        </div>
+      )}
+
+      {fitSuggestions.length > 0 && (
+        <div className="sync-dialog__fits">
+          {fitSuggestions.map((s) => (
+            <button
+              key={s.strategy}
+              type="button"
+              className="sync-dialog__fit"
+              onClick={() => onApplyFit(s.strategy)}
+            >
+              <span className="sync-dialog__fit-label">{s.label}</span>
+              <span className="sync-dialog__fit-desc">{s.description}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {plan.appliedFitStrategy !== null && plan.oversizedFiles.length > 0 && (
+        <div className="sync-dialog__note sync-dialog__note--success">
+          Fitted by{" "}
+          <strong>
+            {plan.appliedFitStrategy === "first-fit"
+              ? "keeping the first " + plan.files.length.toLocaleString() + " tracks"
+              : "dropping the " + plan.oversizedFiles.length.toLocaleString() + " largest"}
+          </strong>
+          . {plan.oversizedFiles.length.toLocaleString()} skipped (
+          {formatBytes(oversizedSize)}).
         </div>
       )}
 

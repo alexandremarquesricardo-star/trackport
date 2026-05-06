@@ -1,12 +1,14 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { Device } from "../shared/devices";
 import type { TrackPortApi } from "../shared/api";
+import type { FitStrategyId } from "../shared/fit";
 import type { SyncPlan, SyncPlanId, SyncProgress } from "../shared/sync";
 
 const DEVICES_LIST_CHANNEL = "devices:list";
 const DEVICES_CHANGED_CHANNEL = "devices:changed";
 const SYNC_PICK_FOLDER = "sync:pick-folder";
 const SYNC_BUILD_PLAN = "sync:build-plan";
+const SYNC_APPLY_FIT = "sync:apply-fit";
 const SYNC_EXECUTE_PLAN = "sync:execute-plan";
 const SYNC_CANCEL_PLAN = "sync:cancel-plan";
 const SYNC_PROGRESS = "sync:progress";
@@ -28,6 +30,8 @@ const api: TrackPortApi = {
   sync: {
     pickFolder: () => ipcRenderer.invoke(SYNC_PICK_FOLDER) as Promise<string | null>,
     buildPlan: (input) => ipcRenderer.invoke(SYNC_BUILD_PLAN, input) as Promise<SyncPlan>,
+    applyFit: (planId: SyncPlanId, strategy: FitStrategyId) =>
+      ipcRenderer.invoke(SYNC_APPLY_FIT, planId, strategy) as Promise<SyncPlan>,
     executePlan: (planId: SyncPlanId) =>
       ipcRenderer.invoke(SYNC_EXECUTE_PLAN, planId) as Promise<void>,
     cancelPlan: (planId: SyncPlanId) =>
