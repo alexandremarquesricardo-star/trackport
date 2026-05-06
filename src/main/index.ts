@@ -1,11 +1,11 @@
 import { app, BrowserWindow, shell } from "electron";
-import { electronApp, optimizer, is } from "@electron-toolkit/utils";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
+import { DeviceDetector } from "./devices/detector";
+import { bindDeviceEventsToWindow, registerDeviceHandlers } from "./devices/ipc";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const detector = new DeviceDetector();
 
-function createWindow(): void {
+function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
     width: 1100,
     height: 720,
@@ -16,7 +16,7 @@ function createWindow(): void {
     title: "TrackPort",
     backgroundColor: "#0b0d12",
     webPreferences: {
-      preload: join(__dirname, "../preload/index.mjs"),
+      preload: join(__dirname, "../preload/index.js"),
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false,
@@ -32,19 +32,26 @@ function createWindow(): void {
     return { action: "deny" };
   });
 
-  if (is.dev && process.env.ELECTRON_RENDERER_URL) {
+  bindDeviceEventsToWindow(mainWindow, detector);
+
+  if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) {
     mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
+    mainWindow.webContents.openDevTools({ mode: "detach" });
   } else {
     mainWindow.loadFile(join(__dirname, "../renderer/index.html"));
   }
+
+  return mainWindow;
 }
 
 app.whenReady().then(() => {
-  electronApp.setAppUserModelId("com.trackport.app");
+  app.setAppUserModelId("com.trackport.app");
 
-  app.on("browser-window-created", (_, window) => {
-    optimizer.watchWindowShortcuts(window);
+  registerDeviceHandlers(detector);
+  detector.on("error", (err) => {
+    console.error("[DeviceDetector] poll error:", err);
   });
+  detector.start();
 
   createWindow();
 
@@ -54,5 +61,10 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => {
+  detector.stop();
   if (process.platform !== "darwin") app.quit();
+});
+
+app.on("before-quit", () => {
+  detector.stop();
 });

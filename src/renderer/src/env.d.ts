@@ -1,13 +1,10 @@
 /// <reference types="vite/client" />
 
-import type { ElectronAPI } from "@electron-toolkit/preload";
+import type { TrackPortApi } from "../../shared/devices";
 
 declare global {
   interface Window {
-    electron: ElectronAPI;
-    api: {
-      appVersion: string;
-    };
+    api: TrackPortApi;
   }
 }
 

@@ -1,9 +1,7 @@
-import type { ElectronAPI } from "@electron-toolkit/preload";
-import type { Api } from "./index";
+import type { TrackPortApi } from "../shared/devices";
 
 declare global {
   interface Window {
-    electron: ElectronAPI;
-    api: Api;
+    api: TrackPortApi;
   }
 }

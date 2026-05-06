@@ -1,6 +1,10 @@
 import "./App.css";
+import { useDevices } from "./hooks/useDevices";
+import type { Device } from "../../shared/devices";
 
 export function App(): JSX.Element {
+  const { devices, loading, error } = useDevices();
+
   return (
     <main className="app">
       <header className="app__header">
@@ -20,12 +24,55 @@ export function App(): JSX.Element {
         </p>
       </section>
 
-      <section className="app__cta">
-        <button className="app__btn app__btn--primary" type="button" disabled>
-          Connect a device
-        </button>
-        <span className="app__cta-hint">Device detection lands in the next iteration.</span>
+      <section className="app__devices" aria-live="polite">
+        {error ? (
+          <div className="app__device-status app__device-status--error">
+            Couldn’t read connected devices: {error}
+          </div>
+        ) : loading ? (
+          <div className="app__device-status">Looking for connected devices…</div>
+        ) : devices.length === 0 ? (
+          <div className="app__device-status">
+            <span className="app__pulse" aria-hidden="true" />
+            Plug in a device to begin
+          </div>
+        ) : (
+          <ul className="app__device-list">
+            {devices.map((device) => (
+              <DeviceCard key={device.id} device={device} />
+            ))}
+          </ul>
+        )}
       </section>
     </main>
   );
+}
+
+function DeviceCard({ device }: { device: Device }): JSX.Element {
+  return (
+    <li className="app__device-card">
+      <div className="app__device-info">
+        <div className="app__device-label">{device.label}</div>
+        <div className="app__device-meta">
+          {formatBytes(device.sizeBytes)} <span className="app__device-meta-sep">·</span>{" "}
+          <span className="app__device-mount">{device.mountPath}</span>
+        </div>
+      </div>
+      <button className="app__btn app__btn--primary" type="button" disabled>
+        Sync to this device
+      </button>
+    </li>
+  );
+}
+
+function formatBytes(bytes: number): string {
+  if (!bytes) return "Unknown size";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  let n = bytes;
+  while (n >= 1024 && i < units.length - 1) {
+    n /= 1024;
+    i++;
+  }
+  return `${n.toFixed(n >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
 }
