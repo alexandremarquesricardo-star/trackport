@@ -1,0 +1,44 @@
+appId: com.trackport.app
+productName: TrackPort
+copyright: Copyright (c) 2026 TrackPort
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - "out/**/*"
+  - "package.json"
+
+asarUnpack:
+  - resources/**
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  artifactName: ${productName}-${version}-${arch}-Setup.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false
+
+mac:
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  category: public.app-category.music
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  category: Audio
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+publish:
+  provider: github
+  releaseType: draft

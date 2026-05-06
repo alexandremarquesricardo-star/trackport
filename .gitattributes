@@ -1,0 +1,31 @@
+# Default: normalize text files to LF in the repo, native on checkout
+* text=auto eol=lf
+
+# Explicitly text
+*.ts        text eol=lf
+*.tsx       text eol=lf
+*.js        text eol=lf
+*.jsx       text eol=lf
+*.json      text eol=lf
+*.html      text eol=lf
+*.css       text eol=lf
+*.md        text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
+
+# Binary
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.ico       binary
+*.icns      binary
+*.exe       binary
+*.dll       binary
+*.dmg       binary
+*.AppImage  binary
+
+# Windows scripts must stay CRLF
+*.bat       text eol=crlf
+*.cmd       text eol=crlf
+*.ps1       text eol=crlf
