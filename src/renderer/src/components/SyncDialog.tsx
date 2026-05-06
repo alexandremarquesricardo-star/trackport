@@ -81,6 +81,14 @@ function PreflightView({
         </div>
       )}
 
+      {plan.files.length > 0 && (
+        <TrackOrderPreview
+          files={plan.files}
+          preserveOrder={plan.preserveOrder}
+          profileLabel={plan.profileLabel}
+        />
+      )}
+
       {!plan.fits && plan.files.length > 0 && (
         <div className="sync-dialog__warn">
           {formatBytes(overshoot)} too large. Remove files from the folder, or pick a smaller
@@ -116,6 +124,49 @@ function PreflightView({
         </button>
       </div>
     </>
+  );
+}
+
+const PREVIEW_LIMIT = 8;
+
+function TrackOrderPreview({
+  files,
+  preserveOrder,
+  profileLabel,
+}: {
+  files: { name: string }[];
+  preserveOrder: boolean;
+  profileLabel: string;
+}): JSX.Element {
+  const visible = files.slice(0, PREVIEW_LIMIT);
+  const more = files.length - visible.length;
+  const collapsedByDefault = files.length > PREVIEW_LIMIT;
+  return (
+    <details className="sync-dialog__tracks" open={!collapsedByDefault}>
+      <summary className="sync-dialog__tracks-summary">
+        Copy order — {files.length.toLocaleString()} {files.length === 1 ? "file" : "files"}
+      </summary>
+      <ol className="sync-dialog__tracks-list">
+        {visible.map((f, i) => (
+          <li key={`${i}-${f.name}`} className="sync-dialog__tracks-item">
+            <span className="sync-dialog__tracks-index">{(i + 1).toString().padStart(2, "0")}</span>
+            <span className="sync-dialog__tracks-name">{f.name}</span>
+          </li>
+        ))}
+        {more > 0 && (
+          <li className="sync-dialog__tracks-item sync-dialog__tracks-item--more">
+            + {more.toLocaleString()} more
+          </li>
+        )}
+      </ol>
+      {preserveOrder && (
+        <p className="sync-dialog__tracks-hint">
+          On <strong>{profileLabel}</strong>, this is the order the device will play them. We
+          copy one file at a time and flush between writes so the device records distinct
+          transmission timestamps.
+        </p>
+      )}
+    </details>
   );
 }
 

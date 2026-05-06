@@ -25,7 +25,12 @@ export interface SyncPlan {
   id: SyncPlanId;
   sourceFolder: string;
   deviceMountPath: string;
-  /** Files that will be copied (passed the profile's format filter). */
+  /**
+   * Files that will be copied (passed the profile's format filter), in the
+   * exact order the executor will copy them. For profiles with
+   * `preserveOrder: true`, this order is what the device will play back —
+   * altering the order here changes playback order on-device.
+   */
   files: AudioFile[];
   /**
    * Files that were found in the source folder but skipped because the
@@ -38,6 +43,12 @@ export interface SyncPlan {
   profileId: string;
   /** Profile label at the time the plan was built (for display). */
   profileLabel: string;
+  /**
+   * Mirrors profile.quirks.transmissionTimeOrder at plan-build time so the
+   * renderer can render the appropriate hint and the executor can pick its
+   * copy strategy without re-reading the catalog.
+   */
+  preserveOrder: boolean;
   totalSizeBytes: number;
   freeSpaceBytes: number;
   fits: boolean;

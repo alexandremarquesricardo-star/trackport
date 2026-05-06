@@ -151,6 +151,89 @@
   letter-spacing: 0.01em;
 }
 
+.sync-dialog__tracks {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sync-dialog__tracks-summary {
+  font-size: 12px;
+  font-weight: 600;
+  color: #cbd5e1;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sync-dialog__tracks-summary::-webkit-details-marker {
+  display: none;
+}
+
+.sync-dialog__tracks-summary::before {
+  content: "▸";
+  font-size: 10px;
+  color: #6b7280;
+  transition: transform 120ms ease;
+}
+
+.sync-dialog__tracks[open] > .sync-dialog__tracks-summary::before {
+  transform: rotate(90deg);
+}
+
+.sync-dialog__tracks-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.sync-dialog__tracks-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
+.sync-dialog__tracks-index {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: #6b7280;
+  flex: 0 0 auto;
+}
+
+.sync-dialog__tracks-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sync-dialog__tracks-item--more {
+  color: #6b7280;
+  font-style: italic;
+  padding-left: 28px;
+}
+
+.sync-dialog__tracks-hint {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: #9aa3b2;
+  line-height: 1.5;
+}
+
 .sync-dialog__progress {
   margin: 22px 0 8px;
   height: 10px;

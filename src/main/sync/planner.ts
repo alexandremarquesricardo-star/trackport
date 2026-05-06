@@ -3,6 +3,7 @@ import { extname } from "node:path";
 import { scanAudioFiles } from "./audio-scan";
 import { getFreeBytes } from "./free-space";
 import { getProfile } from "../../shared/profiles";
+import { compareNatural } from "../../shared/sort";
 import type { AudioFile, SyncPlan } from "../../shared/sync";
 
 export interface BuildPlanInput {
@@ -17,6 +18,12 @@ export interface BuildPlanInput {
  * results into "files that will be copied" and "unsupportedFiles" — the
  * renderer surfaces the latter so the user understands why a stricter
  * profile reduces the count.
+ *
+ * Ordering: supported files are sorted with a natural-collator on the full
+ * path. That keeps "01 Track / 02 Track / 10 Track" in user-intuitive
+ * order (not "01 / 10 / 02"), and groups files within an album folder
+ * together. For profiles whose quirks.transmissionTimeOrder is true, this
+ * order is what the device will play.
  *
  * The plan has a UUID so the executor can be invoked separately and the
  * renderer can reference a specific plan to cancel.
@@ -34,6 +41,8 @@ export async function buildPlan(input: BuildPlanInput): Promise<SyncPlan> {
     else unsupportedFiles.push(f);
   }
 
+  files.sort((a, b) => compareNatural(a.path, b.path));
+
   const totalSizeBytes = files.reduce((acc, f) => acc + f.sizeBytes, 0);
   const freeSpaceBytes = await getFreeBytes(input.deviceMountPath);
 
@@ -45,6 +54,7 @@ export async function buildPlan(input: BuildPlanInput): Promise<SyncPlan> {
     unsupportedFiles,
     profileId: profile.id,
     profileLabel: profile.label,
+    preserveOrder: Boolean(profile.quirks.transmissionTimeOrder),
     totalSizeBytes,
     freeSpaceBytes,
     fits: totalSizeBytes <= freeSpaceBytes,

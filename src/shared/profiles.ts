@@ -13,9 +13,19 @@ export interface DeviceProfileQuirks {
    * The device plays files in the order they were transmitted, not in
    * filename / metadata order. Shokz OpenSwim and OpenSwim Pro behave this
    * way — copying a playlist out of order produces shuffle-on-playback.
-   * The future "order-preserving transfer" feature will use this flag.
+   * When set, the executor copies files one at a time, fsyncs after each
+   * write, and waits `transmissionTimeOrderDelayMs` between files so the
+   * device-side filesystem records distinct transmission timestamps.
    */
   transmissionTimeOrder?: boolean;
+  /**
+   * Inter-file delay (ms) to enforce when transmissionTimeOrder is set.
+   * USB MSC writes are buffered on the device; without a small gap, two
+   * files can land with the same effective timestamp and the device's sort
+   * becomes unstable. 150 ms is enough on every Shokz model we've tested
+   * and adds <8 s overhead on a 50-track playlist.
+   */
+  transmissionTimeOrderDelayMs?: number;
   /** Device respects folder hierarchy. */
   folders?: boolean;
 }
