@@ -10,6 +10,8 @@ const SYNC_BUILD_PLAN = "sync:build-plan";
 const SYNC_EXECUTE_PLAN = "sync:execute-plan";
 const SYNC_CANCEL_PLAN = "sync:cancel-plan";
 const SYNC_PROGRESS = "sync:progress";
+const PREFS_GET_DEVICE_PROFILE = "prefs:get-device-profile";
+const PREFS_SET_DEVICE_PROFILE = "prefs:set-device-profile";
 
 const api: TrackPortApi = {
   appVersion: "0.1.0",
@@ -38,6 +40,12 @@ const api: TrackPortApi = {
         ipcRenderer.removeListener(SYNC_PROGRESS, handler);
       };
     },
+  },
+  preferences: {
+    getDeviceProfile: (deviceId: string) =>
+      ipcRenderer.invoke(PREFS_GET_DEVICE_PROFILE, deviceId) as Promise<string | null>,
+    setDeviceProfile: (deviceId: string, profileId: string) =>
+      ipcRenderer.invoke(PREFS_SET_DEVICE_PROFILE, deviceId, profileId) as Promise<void>,
   },
 };
 

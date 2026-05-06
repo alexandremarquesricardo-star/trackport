@@ -2,9 +2,12 @@ import { app, BrowserWindow, shell } from "electron";
 import { join } from "node:path";
 import { DeviceDetector } from "./devices/detector";
 import { bindDeviceEventsToWindow, registerDeviceHandlers } from "./devices/ipc";
+import { PreferencesStore } from "./preferences/store";
+import { registerPreferencesHandlers } from "./preferences/ipc";
 import { bindSyncEventsToWindow, registerSyncHandlers } from "./sync/ipc";
 
 const detector = new DeviceDetector();
+const preferences = new PreferencesStore();
 
 function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
@@ -46,10 +49,13 @@ function createWindow(): BrowserWindow {
   return mainWindow;
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   app.setAppUserModelId("com.trackport.app");
 
+  await preferences.load();
+
   registerDeviceHandlers(detector);
+  registerPreferencesHandlers(preferences);
   registerSyncHandlers();
   detector.on("error", (err) => {
     console.error("[DeviceDetector] poll error:", err);
@@ -65,9 +71,14 @@ app.whenReady().then(() => {
 
 app.on("window-all-closed", () => {
   detector.stop();
+  void preferences.flush();
   if (process.platform !== "darwin") app.quit();
 });
 
-app.on("before-quit", () => {
+app.on("before-quit", (event) => {
   detector.stop();
+  // Best-effort flush. We deliberately don't block quit on a slow disk —
+  // the debounced writes have at most ~250 ms of in-memory state by design.
+  event.preventDefault();
+  preferences.flush().finally(() => app.exit(0));
 });

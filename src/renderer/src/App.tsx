@@ -1,10 +1,10 @@
 import "./App.css";
-import { useMemo, useState } from "react";
 import { useDevices } from "./hooks/useDevices";
+import { useDeviceProfile } from "./hooks/useDeviceProfile";
 import { useSync } from "./hooks/useSync";
 import { SyncDialog } from "./components/SyncDialog";
 import type { Device } from "../../shared/devices";
-import { autoDetectProfile, PROFILES } from "../../shared/profiles";
+import { PROFILES } from "../../shared/profiles";
 
 export function App(): JSX.Element {
   const { devices, loading, error } = useDevices();
@@ -74,8 +74,7 @@ function DeviceCard({
   disabled: boolean;
   onSync: (profileId: string) => void;
 }): JSX.Element {
-  const detected = useMemo(() => autoDetectProfile(device.label), [device.label]);
-  const [profileId, setProfileId] = useState<string>(detected);
+  const { profileId, setProfileId } = useDeviceProfile(device.id, device.label);
 
   return (
     <li className="app__device-card">
