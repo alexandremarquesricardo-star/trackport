@@ -1,9 +1,12 @@
 import "./App.css";
 import { useDevices } from "./hooks/useDevices";
+import { useSync } from "./hooks/useSync";
+import { SyncDialog } from "./components/SyncDialog";
 import type { Device } from "../../shared/devices";
 
 export function App(): JSX.Element {
   const { devices, loading, error } = useDevices();
+  const sync = useSync();
 
   return (
     <main className="app">
@@ -39,16 +42,36 @@ export function App(): JSX.Element {
         ) : (
           <ul className="app__device-list">
             {devices.map((device) => (
-              <DeviceCard key={device.id} device={device} />
+              <DeviceCard
+                key={device.id}
+                device={device}
+                disabled={sync.isBusy}
+                onSync={() => sync.start(device)}
+              />
             ))}
           </ul>
         )}
       </section>
+
+      <SyncDialog
+        state={sync.state}
+        onConfirm={sync.confirm}
+        onCancel={sync.cancel}
+        onClose={sync.close}
+      />
     </main>
   );
 }
 
-function DeviceCard({ device }: { device: Device }): JSX.Element {
+function DeviceCard({
+  device,
+  disabled,
+  onSync,
+}: {
+  device: Device;
+  disabled: boolean;
+  onSync: () => void;
+}): JSX.Element {
   return (
     <li className="app__device-card">
       <div className="app__device-info">
@@ -61,11 +84,10 @@ function DeviceCard({ device }: { device: Device }): JSX.Element {
       <button
         className="app__btn app__btn--primary"
         type="button"
-        disabled
-        title="Sync flow lands in the next iteration"
+        onClick={onSync}
+        disabled={disabled}
       >
         Sync to this device
-        <span className="app__btn-badge">soon</span>
       </button>
     </li>
   );

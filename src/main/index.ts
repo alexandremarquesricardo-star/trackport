@@ -2,6 +2,7 @@ import { app, BrowserWindow, shell } from "electron";
 import { join } from "node:path";
 import { DeviceDetector } from "./devices/detector";
 import { bindDeviceEventsToWindow, registerDeviceHandlers } from "./devices/ipc";
+import { bindSyncEventsToWindow, registerSyncHandlers } from "./sync/ipc";
 
 const detector = new DeviceDetector();
 
@@ -33,6 +34,7 @@ function createWindow(): BrowserWindow {
   });
 
   bindDeviceEventsToWindow(mainWindow, detector);
+  bindSyncEventsToWindow(mainWindow);
 
   if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) {
     mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
@@ -48,6 +50,7 @@ app.whenReady().then(() => {
   app.setAppUserModelId("com.trackport.app");
 
   registerDeviceHandlers(detector);
+  registerSyncHandlers();
   detector.on("error", (err) => {
     console.error("[DeviceDetector] poll error:", err);
   });

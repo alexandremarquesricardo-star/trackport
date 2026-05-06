@@ -35,8 +35,3 @@ export interface DevicesApi {
    */
   onChanged: (cb: (devices: Device[]) => void) => () => void;
 }
-
-export interface TrackPortApi {
-  appVersion: string;
-  devices: DevicesApi;
-}

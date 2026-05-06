@@ -1,0 +1,188 @@
+.sync-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(11, 13, 18, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 100;
+  animation: sync-dialog-fade-in 160ms ease-out;
+}
+
+.sync-dialog {
+  width: min(560px, 90vw);
+  background: #11141b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 28px 28px 22px;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+  animation: sync-dialog-rise 220ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+@keyframes sync-dialog-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sync-dialog-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sync-dialog__title {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #e6e8ee;
+}
+
+.sync-dialog__title--success {
+  background: linear-gradient(135deg, #6ee7b7 0%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sync-dialog__title--error {
+  color: #fca5a5;
+}
+
+.sync-dialog__sub {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: #9aa3b2;
+  line-height: 1.55;
+  word-break: break-word;
+}
+
+.sync-dialog__sub--mono {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.sync-dialog__path,
+.sync-dialog__filename {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #cbd5e1;
+}
+
+.sync-dialog__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 22px 0 6px;
+  padding: 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sync-dialog__stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+
+.sync-dialog__stats dt {
+  font-size: 11px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0;
+}
+
+.sync-dialog__stats dd {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #e6e8ee;
+  font-variant-numeric: tabular-nums;
+}
+
+.sync-dialog__warn {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.25);
+  color: #fca5a5;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.sync-dialog__progress {
+  margin: 22px 0 8px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.sync-dialog__progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1 0%, #38bdf8 100%);
+  transition: width 200ms ease;
+}
+
+.sync-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.sync-dialog__btn {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    transform 120ms ease,
+    opacity 120ms ease;
+}
+
+.sync-dialog__btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.sync-dialog__btn--ghost {
+  background: transparent;
+  color: #cbd5e1;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.sync-dialog__btn--ghost:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sync-dialog__btn--primary {
+  background: linear-gradient(135deg, #6366f1 0%, #38bdf8 100%);
+  color: white;
+}
+
+.sync-dialog__btn--primary:not(:disabled):hover {
+  transform: translateY(-1px);
+}

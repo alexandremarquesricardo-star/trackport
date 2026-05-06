@@ -1,0 +1,68 @@
+import { BrowserWindow, dialog, ipcMain } from "electron";
+import type { SyncPlan, SyncPlanId, SyncProgress } from "../../shared/sync";
+import { buildPlan, type BuildPlanInput } from "./planner";
+import { SyncExecutor } from "./executor";
+
+export const SYNC_PICK_FOLDER = "sync:pick-folder";
+export const SYNC_BUILD_PLAN = "sync:build-plan";
+export const SYNC_EXECUTE_PLAN = "sync:execute-plan";
+export const SYNC_CANCEL_PLAN = "sync:cancel-plan";
+export const SYNC_PROGRESS = "sync:progress";
+
+const plans = new Map<SyncPlanId, SyncPlan>();
+const executor = new SyncExecutor();
+
+export function registerSyncHandlers(): void {
+  ipcMain.handle(SYNC_PICK_FOLDER, async (event): Promise<string | null> => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const opts = {
+      title: "Pick a folder of audio files",
+      buttonLabel: "Use this folder",
+      properties: ["openDirectory" as const, "dontAddToRecent" as const],
+    };
+    const result = win
+      ? await dialog.showOpenDialog(win, opts)
+      : await dialog.showOpenDialog(opts);
+    if (result.canceled || result.filePaths.length === 0) return null;
+    return result.filePaths[0];
+  });
+
+  ipcMain.handle(
+    SYNC_BUILD_PLAN,
+    async (_event, input: BuildPlanInput): Promise<SyncPlan> => {
+      const plan = await buildPlan(input);
+      plans.set(plan.id, plan);
+      return plan;
+    },
+  );
+
+  ipcMain.handle(SYNC_EXECUTE_PLAN, async (_event, planId: SyncPlanId): Promise<void> => {
+    const plan = plans.get(planId);
+    if (!plan) throw new Error(`Plan ${planId} not found`);
+    try {
+      await executor.execute(plan);
+    } finally {
+      plans.delete(planId);
+    }
+  });
+
+  ipcMain.handle(SYNC_CANCEL_PLAN, async (_event, planId: SyncPlanId): Promise<void> => {
+    executor.cancel(planId);
+  });
+}
+
+/**
+ * Forward executor progress events to the renderer. Cleans up on window close.
+ */
+export function bindSyncEventsToWindow(window: BrowserWindow): () => void {
+  const handler = (progress: SyncProgress): void => {
+    if (window.isDestroyed()) return;
+    window.webContents.send(SYNC_PROGRESS, progress);
+  };
+  executor.on("progress", handler);
+  const unbind = (): void => {
+    executor.off("progress", handler);
+  };
+  window.once("closed", unbind);
+  return unbind;
+}

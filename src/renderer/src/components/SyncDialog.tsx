@@ -1,0 +1,223 @@
+import "./SyncDialog.css";
+import type { SyncState } from "../hooks/useSync";
+
+interface Props {
+  state: SyncState;
+  onConfirm: () => void;
+  onCancel: () => void;
+  onClose: () => void;
+}
+
+export function SyncDialog({ state, onConfirm, onCancel, onClose }: Props): JSX.Element | null {
+  if (state.phase === "idle" || state.phase === "picking") return null;
+
+  const dismissable = state.phase === "done" || state.phase === "error";
+
+  return (
+    <div
+      className="sync-dialog__backdrop"
+      onClick={dismissable ? onClose : undefined}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="sync-dialog" onClick={(e) => e.stopPropagation()}>
+        {state.phase === "preflight" && (
+          <PreflightView state={state} onConfirm={onConfirm} onClose={onClose} />
+        )}
+        {state.phase === "copying" && <CopyingView state={state} onCancel={onCancel} />}
+        {state.phase === "done" && <DoneView state={state} onClose={onClose} />}
+        {state.phase === "error" && <ErrorView state={state} onClose={onClose} />}
+      </div>
+    </div>
+  );
+}
+
+function PreflightView({
+  state,
+  onConfirm,
+  onClose,
+}: {
+  state: Extract<SyncState, { phase: "preflight" }>;
+  onConfirm: () => void;
+  onClose: () => void;
+}): JSX.Element {
+  const { plan, device } = state;
+  const overshoot = plan.totalSizeBytes - plan.freeSpaceBytes;
+
+  return (
+    <>
+      <h2 className="sync-dialog__title">Ready to sync</h2>
+      <p className="sync-dialog__sub">
+        From <code className="sync-dialog__path">{plan.sourceFolder}</code>
+      </p>
+      <p className="sync-dialog__sub">
+        To <strong>{device.label}</strong> ({device.mountPath})
+      </p>
+
+      <dl className="sync-dialog__stats">
+        <div>
+          <dt>Audio files</dt>
+          <dd>{plan.files.length.toLocaleString()}</dd>
+        </div>
+        <div>
+          <dt>Total size</dt>
+          <dd>{formatBytes(plan.totalSizeBytes)}</dd>
+        </div>
+        <div>
+          <dt>Device free</dt>
+          <dd>{formatBytes(plan.freeSpaceBytes)}</dd>
+        </div>
+      </dl>
+
+      {!plan.fits && (
+        <div className="sync-dialog__warn">
+          {formatBytes(overshoot)} too large. Remove files from the folder, or pick a smaller
+          set. Smart-fit and format conversion ship in a future iteration.
+        </div>
+      )}
+
+      {plan.files.length === 0 && (
+        <div className="sync-dialog__warn">
+          No audio files found in this folder. Supported: MP3, WAV, FLAC, M4A, AAC, WMA, OGG,
+          OPUS, AIF, AIFF, APE.
+        </div>
+      )}
+
+      <div className="sync-dialog__actions">
+        <button className="sync-dialog__btn sync-dialog__btn--ghost" type="button" onClick={onClose}>
+          Cancel
+        </button>
+        <button
+          className="sync-dialog__btn sync-dialog__btn--primary"
+          type="button"
+          onClick={onConfirm}
+          disabled={!plan.fits || plan.files.length === 0}
+        >
+          Copy {plan.files.length > 0 ? plan.files.length.toLocaleString() : ""} files
+        </button>
+      </div>
+    </>
+  );
+}
+
+function CopyingView({
+  state,
+  onCancel,
+}: {
+  state: Extract<SyncState, { phase: "copying" }>;
+  onCancel: () => void;
+}): JSX.Element {
+  const { progress, plan } = state;
+  const ratio =
+    progress.state === "copying" && progress.totalBytes > 0
+      ? progress.bytesCopied / progress.totalBytes
+      : 0;
+  const percent = Math.round(ratio * 100);
+
+  return (
+    <>
+      <h2 className="sync-dialog__title">Syncing…</h2>
+      {progress.state === "copying" ? (
+        <p className="sync-dialog__sub">
+          {progress.currentIndex + 1} of {progress.totalFiles} ·{" "}
+          <span className="sync-dialog__filename">{progress.currentFile}</span>
+        </p>
+      ) : (
+        <p className="sync-dialog__sub">Preparing…</p>
+      )}
+
+      <div
+        className="sync-dialog__progress"
+        role="progressbar"
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div className="sync-dialog__progress-fill" style={{ width: `${percent}%` }} />
+      </div>
+      <p className="sync-dialog__sub sync-dialog__sub--mono">
+        {progress.state === "copying"
+          ? `${formatBytes(progress.bytesCopied)} / ${formatBytes(progress.totalBytes)} (${percent}%)`
+          : `0 / ${formatBytes(plan.totalSizeBytes)}`}
+      </p>
+
+      <div className="sync-dialog__actions">
+        <button className="sync-dialog__btn sync-dialog__btn--ghost" type="button" onClick={onCancel}>
+          Cancel sync
+        </button>
+      </div>
+    </>
+  );
+}
+
+function DoneView({
+  state,
+  onClose,
+}: {
+  state: Extract<SyncState, { phase: "done" }>;
+  onClose: () => void;
+}): JSX.Element {
+  return (
+    <>
+      <h2 className="sync-dialog__title sync-dialog__title--success">Sync complete</h2>
+      <p className="sync-dialog__sub">
+        {state.copiedCount.toLocaleString()} copied
+        {state.skippedCount > 0 && (
+          <>
+            {" · "}
+            {state.skippedCount.toLocaleString()} already on device (skipped)
+          </>
+        )}
+      </p>
+      <p className="sync-dialog__sub sync-dialog__sub--mono">
+        {formatBytes(state.totalBytes)} in {formatDuration(state.durationMs)}
+      </p>
+      <div className="sync-dialog__actions">
+        <button className="sync-dialog__btn sync-dialog__btn--primary" type="button" onClick={onClose}>
+          Done
+        </button>
+      </div>
+    </>
+  );
+}
+
+function ErrorView({
+  state,
+  onClose,
+}: {
+  state: Extract<SyncState, { phase: "error" }>;
+  onClose: () => void;
+}): JSX.Element {
+  return (
+    <>
+      <h2 className="sync-dialog__title sync-dialog__title--error">Sync stopped</h2>
+      <p className="sync-dialog__sub">{state.message}</p>
+      <div className="sync-dialog__actions">
+        <button className="sync-dialog__btn sync-dialog__btn--primary" type="button" onClick={onClose}>
+          Close
+        </button>
+      </div>
+    </>
+  );
+}
+
+function formatBytes(bytes: number): string {
+  if (!bytes) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let i = 0;
+  let n = bytes;
+  while (n >= 1024 && i < units.length - 1) {
+    n /= 1024;
+    i++;
+  }
+  return `${n.toFixed(n >= 10 || i === 0 ? 0 : 1)} ${units[i]}`;
+}
+
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms} ms`;
+  const s = ms / 1000;
+  if (s < 60) return `${s.toFixed(1)} s`;
+  const m = Math.floor(s / 60);
+  const rs = Math.round(s - m * 60);
+  return `${m} min ${rs} s`;
+}
