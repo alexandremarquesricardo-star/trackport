@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import type { Device } from "../shared/devices";
 import type { TrackPortApi } from "../shared/api";
 import type { FitStrategyId } from "../shared/fit";
+import type { Library } from "../shared/library";
 import type { SyncPlan, SyncPlanId, SyncProgress } from "../shared/sync";
 
 const DEVICES_LIST_CHANNEL = "devices:list";
@@ -14,6 +15,10 @@ const SYNC_CANCEL_PLAN = "sync:cancel-plan";
 const SYNC_PROGRESS = "sync:progress";
 const PREFS_GET_DEVICE_PROFILE = "prefs:get-device-profile";
 const PREFS_SET_DEVICE_PROFILE = "prefs:set-device-profile";
+const LIBRARY_GET = "library:get";
+const LIBRARY_ADD = "library:add";
+const LIBRARY_REMOVE = "library:remove";
+const LIBRARY_RESCAN = "library:rescan";
 
 const api: TrackPortApi = {
   appVersion: "0.1.0",
@@ -50,6 +55,12 @@ const api: TrackPortApi = {
       ipcRenderer.invoke(PREFS_GET_DEVICE_PROFILE, deviceId) as Promise<string | null>,
     setDeviceProfile: (deviceId: string, profileId: string) =>
       ipcRenderer.invoke(PREFS_SET_DEVICE_PROFILE, deviceId, profileId) as Promise<void>,
+  },
+  library: {
+    get: () => ipcRenderer.invoke(LIBRARY_GET) as Promise<Library | null>,
+    add: () => ipcRenderer.invoke(LIBRARY_ADD) as Promise<Library | null>,
+    remove: () => ipcRenderer.invoke(LIBRARY_REMOVE) as Promise<void>,
+    rescan: () => ipcRenderer.invoke(LIBRARY_RESCAN) as Promise<Library | null>,
   },
 };
 

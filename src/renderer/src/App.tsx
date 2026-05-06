@@ -1,13 +1,17 @@
 import "./App.css";
 import { useDevices } from "./hooks/useDevices";
 import { useDeviceProfile } from "./hooks/useDeviceProfile";
+import { useLibrary } from "./hooks/useLibrary";
 import { useSync } from "./hooks/useSync";
+import { LibrarySection } from "./components/LibrarySection";
 import { SyncDialog } from "./components/SyncDialog";
 import type { Device } from "../../shared/devices";
+import type { Library } from "../../shared/library";
 import { PROFILES } from "../../shared/profiles";
 
 export function App(): JSX.Element {
   const { devices, loading, error } = useDevices();
+  const lib = useLibrary();
   const sync = useSync();
 
   return (
@@ -29,30 +33,44 @@ export function App(): JSX.Element {
         </p>
       </section>
 
-      <section className="app__devices" aria-live="polite">
-        {error ? (
-          <div className="app__device-status app__device-status--error">
-            Couldn’t read connected devices: {error}
-          </div>
-        ) : loading ? (
-          <div className="app__device-status">Looking for connected devices…</div>
-        ) : devices.length === 0 ? (
-          <div className="app__device-status">
-            <span className="app__pulse" aria-hidden="true" />
-            Plug in a device to begin
-          </div>
-        ) : (
-          <ul className="app__device-list">
-            {devices.map((device) => (
-              <DeviceCard
-                key={device.id}
-                device={device}
-                disabled={sync.isBusy}
-                onSync={(profileId) => sync.start(device, profileId)}
-              />
-            ))}
-          </ul>
-        )}
+      <section className="app__board">
+        <LibrarySection
+          library={lib.library}
+          loading={lib.loading}
+          busy={lib.busy}
+          onAdd={lib.add}
+          onRescan={lib.rescan}
+          onRemove={lib.remove}
+        />
+
+        <div className="app__devices" aria-live="polite">
+          {error ? (
+            <div className="app__device-status app__device-status--error">
+              Couldn’t read connected devices: {error}
+            </div>
+          ) : loading ? (
+            <div className="app__device-status">Looking for connected devices…</div>
+          ) : devices.length === 0 ? (
+            <div className="app__device-status">
+              <span className="app__pulse" aria-hidden="true" />
+              Plug in a device to begin
+            </div>
+          ) : (
+            <ul className="app__device-list">
+              {devices.map((device) => (
+                <DeviceCard
+                  key={device.id}
+                  device={device}
+                  library={lib.library}
+                  disabled={sync.isBusy}
+                  onSync={(profileId, initialFolder) =>
+                    sync.start(device, profileId, initialFolder)
+                  }
+                />
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
 
       <SyncDialog
@@ -68,12 +86,14 @@ export function App(): JSX.Element {
 
 function DeviceCard({
   device,
+  library,
   disabled,
   onSync,
 }: {
   device: Device;
+  library: Library | null;
   disabled: boolean;
-  onSync: (profileId: string) => void;
+  onSync: (profileId: string, initialFolder?: string) => void;
 }): JSX.Element {
   const { profileId, setProfileId } = useDeviceProfile(device.id, device.label);
 
@@ -101,14 +121,26 @@ function DeviceCard({
           </select>
         </label>
       </div>
-      <button
-        className="app__btn app__btn--primary"
-        type="button"
-        onClick={() => onSync(profileId)}
-        disabled={disabled}
-      >
-        Sync to this device
-      </button>
+      <div className="app__device-actions">
+        {library && (
+          <button
+            className="app__btn app__btn--primary"
+            type="button"
+            onClick={() => onSync(profileId, library.root)}
+            disabled={disabled}
+          >
+            Sync library
+          </button>
+        )}
+        <button
+          className={`app__btn ${library ? "app__btn--ghost" : "app__btn--primary"}`}
+          type="button"
+          onClick={() => onSync(profileId)}
+          disabled={disabled}
+        >
+          {library ? "Sync folder…" : "Sync to this device"}
+        </button>
+      </div>
     </li>
   );
 }

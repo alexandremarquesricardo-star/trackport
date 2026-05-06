@@ -1,4 +1,5 @@
 import type { DevicesApi } from "./devices";
+import type { LibraryApi } from "./library";
 import type { PreferencesApi } from "./preferences";
 import type { SyncApi } from "./sync";
 
@@ -12,4 +13,5 @@ export interface TrackPortApi {
   devices: DevicesApi;
   sync: SyncApi;
   preferences: PreferencesApi;
+  library: LibraryApi;
 }

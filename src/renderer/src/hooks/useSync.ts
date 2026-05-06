@@ -21,7 +21,12 @@ export type SyncState =
 
 export interface UseSyncResult {
   state: SyncState;
-  start: (device: Device, profileId: string) => Promise<void>;
+  /**
+   * Begin the sync flow. If `initialFolder` is provided the native folder
+   * picker is skipped and we go straight to buildPlan with that path —
+   * this is how "Sync library" bypasses the picker.
+   */
+  start: (device: Device, profileId: string, initialFolder?: string) => Promise<void>;
   applyFit: (strategy: FitStrategyId) => Promise<void>;
   confirm: () => Promise<void>;
   cancel: () => Promise<void>;
@@ -61,28 +66,31 @@ export function useSync(): UseSyncResult {
     });
   }, []);
 
-  const start = useCallback(async (device: Device, profileId: string): Promise<void> => {
-    setState({ phase: "picking", device });
-    try {
-      const folder = await window.api.sync.pickFolder();
-      if (!folder) {
-        setState(idle);
-        return;
+  const start = useCallback(
+    async (device: Device, profileId: string, initialFolder?: string): Promise<void> => {
+      setState({ phase: "picking", device });
+      try {
+        const folder = initialFolder ?? (await window.api.sync.pickFolder());
+        if (!folder) {
+          setState(idle);
+          return;
+        }
+        const plan = await window.api.sync.buildPlan({
+          sourceFolder: folder,
+          deviceMountPath: device.mountPath,
+          profileId,
+        });
+        setState({ phase: "preflight", device, plan });
+      } catch (err) {
+        setState({
+          phase: "error",
+          device,
+          message: err instanceof Error ? err.message : String(err),
+        });
       }
-      const plan = await window.api.sync.buildPlan({
-        sourceFolder: folder,
-        deviceMountPath: device.mountPath,
-        profileId,
-      });
-      setState({ phase: "preflight", device, plan });
-    } catch (err) {
-      setState({
-        phase: "error",
-        device,
-        message: err instanceof Error ? err.message : String(err),
-      });
-    }
-  }, []);
+    },
+    [],
+  );
 
   const applyFit = useCallback(async (strategy: FitStrategyId): Promise<void> => {
     const current = stateRef.current;
