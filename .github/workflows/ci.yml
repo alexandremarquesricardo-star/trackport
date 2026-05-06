@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Minimal permissions — the workflow only reads source and posts a check
+# status. Granting more would be bigger blast radius if a malicious dep
+# ever ran in this context.
+permissions:
+  contents: read
+
+# Cancel an in-flight run if a newer commit is pushed to the same ref.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: typecheck + build (ubuntu)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # Cache Electron's downloaded binary so install-app-deps skips a
+      # ~100 MB redownload on warm runs. Keyed on package-lock.json so a
+      # bumped Electron version cleanly invalidates.
+      - name: Cache Electron download
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/electron
+          key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            electron-${{ runner.os }}-
+
+      - name: Install dependencies
+        # `npm ci` runs our postinstall (electron-builder install-app-deps),
+        # which rebuilds drivelist's native binding against Electron's ABI.
+        run: npm ci
+
+      - name: Typecheck + production build
+        # `npm run build` chains `npm run typecheck && electron-vite build`,
+        # so this single step exercises the strict TS project references
+        # and bundles main / preload / renderer.
+        run: npm run build

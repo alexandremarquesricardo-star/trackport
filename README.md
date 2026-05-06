@@ -1,5 +1,7 @@
 # TrackPort
 
+[![CI](https://github.com/alexandremarquesricardo-star/trackport/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/alexandremarquesricardo-star/trackport/actions/workflows/ci.yml)
+
 > Get your music from where it lives onto your offline device. Three taps.
 
 TrackPort is a cross-platform tool that bridges your personal audio library to offline playback devices — swim headphones (Shokz OpenSwim, FINIS Duo, H2O Audio), USB MP3 players, and similar gear that needs files on disk rather than streams.
