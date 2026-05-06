@@ -16,6 +16,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Opt actions/* into Node 24 ahead of GitHub's 2026-06-02 forced cutover.
+# Removable once all actions in this workflow ship a Node 24 release we
+# pin to.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build:
     name: typecheck + build (ubuntu)
