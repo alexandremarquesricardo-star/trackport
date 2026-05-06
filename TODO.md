@@ -1,0 +1,111 @@
+# TrackPort — TODO
+
+> Living plan. Update as iterations land.
+> Last updated: 2026-05-06
+
+---
+
+## Where we are
+
+**Status:** v0.1.0 — local Electron app, 12 commits on `main`, CI green, working end-to-end on Windows.
+
+The 3-tap thesis is real and reduces to ~2 taps when a library is set:
+**pick device → tap Sync library → tap Copy.**
+
+### Shipped
+
+| # | Commit | What landed |
+|---|---|---|
+| 1 | `a28a27b` | Project scaffold (Electron + React + TS + Vite) |
+| 2 | `0305eca` | USB device detection (drivelist + IPC + live UI) |
+| 3 | `ae4e6a4` | Removal-bug fix + "soon" badge |
+| 4 | `4d49e36` | Sync vertical slice (folder picker → preflight → copy with progress) |
+| 5 | `d28b415` | Device profiles (filter unsupported formats per device) |
+| 6 | `84cb8ba` | **Order preservation for Shokz / transmission-time devices** (wedge) |
+| 7 | `f088890` | Profile persistence (per-device choice across launches) |
+| 8 | `2c74eea` | Smart fit (two strategies that turn oversize plans into copyable ones) |
+| 9 | `500314d` + `afbb80c` | GitHub Actions CI |
+| 10 | `86bb92e` | Library import (persistent music root) |
+| 11 | `7d874fd` | Per-file copy-error recovery |
+
+### What works today
+
+- Detects removable USB devices live (add / remove)
+- Recognizes Shokz OpenSwim Pro / OpenSwim / FINIS Duo / generic USB profiles, plus an MP3-only profile
+- Filters formats per device profile
+- Sorts tracks naturally (`01 / 02 / 10`, not `01 / 10 / 02`)
+- Preserves playback order on Shokz via fsync + 150 ms inter-file delay
+- Smart-fits oversize plans (first-fit / drop-largest)
+- Remembers per-device profile + library root across launches
+- Continues past per-file copy errors, surfaces them in the done state
+- CI typecheck + build on every push to main / PR
+
+---
+
+## Next up (in order of leverage)
+
+### 1. App icon + window chrome polish
+- Replace default Electron icon with a TrackPort mark (Windows `.ico`, macOS `.icns`, Linux `.png`)
+- Polish the empty-state header / hero spacing now that the layout has more sections
+- Quickest perceived-quality lift before any sharing or screenshots
+- Single iteration
+
+### 2. Cached library index
+- Re-scanning on every sync starts to hurt at 10k+ tracks
+- mtime-based incremental indexing: keep the last-known file list in `library.json`, on rescan compare directory mtimes and only re-stat what changed
+- Surface "scanned 2 min ago — N tracks" without a fresh scan
+
+### 3. Linting + Prettier in CI
+- ESLint + Prettier configs, `npm run lint` script, add to CI matrix
+- Catches dumb bugs and keeps formatting consistent
+- Cheap, durable
+
+### 4. Spotify metadata-only matcher (multi-iteration arc)
+The remaining big wedge feature. Will need:
+- Spotify Developer app (client ID / secret) — register at developer.spotify.com
+- Hono backend on Railway holding the secret + brokering token requests
+- New IPC: `library.matchAgainstSpotify(playlistUrl)` → returns `{ matched, missing }`
+- UI: paste playlist URL → list comes back with each track marked matched/missing
+- "Mark for purchase" / "Skip" actions on missing tracks
+- Hard rail: metadata only, no audio extraction (already in the README)
+
+Roughly 3-4 iterations:
+1. Backend skeleton on Railway + auth round-trip
+2. Track list fetch from Spotify URL
+3. Local library matcher (artist/title fuzzy match)
+4. UI integration in the dialog flow
+
+---
+
+## Parking lot (good ideas, not now)
+
+- Multi-root libraries (`~/Music` + external drive)
+- Drag-to-reorder in preflight (manual override of natural sort)
+- Sort by ID3 track number / album metadata
+- "Wipe device first for guaranteed order" toggle
+- Re-encode FLAC/WAV → MP3 at sync time (needs ffmpeg sidecar, license-aware)
+- Manual track exclusion in preflight (uncheck individual files)
+- Mobile companion (React Native or PWA) for "plan on phone, execute on desktop" hand-off
+- Auto-update channel (electron-updater + GitHub Releases)
+- Per-strategy preview of which tracks would actually be dropped (smart fit)
+- Device-side cleanup ("delete tracks no longer in library")
+
+---
+
+## Resume hints
+
+```sh
+npm install         # postinstall rebuilds drivelist for Electron's ABI
+npm run dev         # launches the app with live reload on Windows / macOS / Linux
+npm run build       # typecheck + production bundle
+npm run dist:win    # NSIS installer
+npm run dist:mac    # DMG (universal)
+npm run dist:linux  # AppImage
+```
+
+Persistent state lives at:
+- Windows: `%APPDATA%\TrackPort\preferences.json` + `library.json`
+- macOS: `~/Library/Application Support/TrackPort/...`
+- Linux: `~/.config/TrackPort/...`
+
+Known gotcha: VS Code's integrated terminal exports `ELECTRON_RUN_AS_NODE=1` which makes Electron boot as plain Node and crash immediately. The launcher `scripts/electron-vite.cjs` deletes the var before spawning — don't bypass it.
