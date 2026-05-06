@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Device } from "../../../shared/devices";
 import type { FitStrategyId } from "../../../shared/fit";
-import type { SyncPlan, SyncProgress } from "../../../shared/sync";
+import type { SyncFailure, SyncPlan, SyncProgress } from "../../../shared/sync";
 
 export type SyncState =
   | { phase: "idle" }
@@ -14,7 +14,9 @@ export type SyncState =
       plan: SyncPlan;
       copiedCount: number;
       skippedCount: number;
-      totalBytes: number;
+      failedCount: number;
+      failures: SyncFailure[];
+      bytesOnDevice: number;
       durationMs: number;
     }
   | { phase: "error"; device: Device | null; message: string };
@@ -57,7 +59,9 @@ export function useSync(): UseSyncResult {
             plan,
             copiedCount: progress.copiedCount,
             skippedCount: progress.skippedCount,
-            totalBytes: progress.totalBytes,
+            failedCount: progress.failedCount,
+            failures: progress.failures,
+            bytesOnDevice: progress.bytesOnDevice,
             durationMs: progress.durationMs,
           };
         }

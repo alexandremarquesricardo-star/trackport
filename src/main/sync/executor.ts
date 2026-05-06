@@ -3,9 +3,25 @@ import { copyFile, open, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { getProfile } from "../../shared/profiles";
-import type { SyncPlan, SyncPlanId, SyncProgress } from "../../shared/sync";
+import type {
+  SyncFailure,
+  SyncPlan,
+  SyncPlanId,
+  SyncProgress,
+} from "../../shared/sync";
 
 const DEFAULT_TRANSMISSION_DELAY_MS = 150;
+
+/**
+ * Errors that abort the whole sync immediately. Continuing past these is
+ * pointless — the device is full or gone. Anything else is treated as a
+ * per-file failure: we record it in the failures list and keep going.
+ */
+const FATAL_ERRNO = new Set<string>([
+  "ENOSPC", // device full
+  "EROFS", // filesystem became read-only
+  "EIO", // hardware I/O error on the destination
+]);
 
 /**
  * Executes a SyncPlan by copying files one at a time onto the target device.
@@ -29,9 +45,14 @@ const DEFAULT_TRANSMISSION_DELAY_MS = 150;
  *      that sort by transmission time (Shokz OpenSwim / Pro) will then
  *      play files in plan.files order instead of arbitrary device order.
  *
- * Errors: a per-file error aborts the whole plan and emits state="error"
- * with the partial copiedCount. Callers can decide whether to surface "0
- * synced, 50 skipped because we crashed before file 51."
+ * Errors:
+ *   - FATAL_ERRNO (ENOSPC / EROFS / EIO): abort. Emit state="error" with
+ *     the partial copiedCount. The device is full or unreachable; trying
+ *     more files is wasted effort.
+ *   - Anything else (per-file): record in `failures`, increment
+ *     failedCount, continue. The user gets a single "done" event at the
+ *     end with the full list — way better than a single bad MP3 in the
+ *     middle of a 100-track playlist torpedoing the whole sync.
  */
 export class SyncExecutor extends EventEmitter {
   private cancelled = new Set<SyncPlanId>();
@@ -50,9 +71,10 @@ export class SyncExecutor extends EventEmitter {
         ? profile.quirks.transmissionTimeOrderDelayMs ?? DEFAULT_TRANSMISSION_DELAY_MS
         : 0;
 
-    let bytesCopied = 0;
+    let bytesOnDevice = 0;
     let copiedCount = 0;
     let skippedCount = 0;
+    const failures: SyncFailure[] = [];
 
     for (let i = 0; i < plan.files.length; i++) {
       if (this.cancelled.has(plan.id)) {
@@ -71,7 +93,7 @@ export class SyncExecutor extends EventEmitter {
         currentIndex: i,
         currentFile: file.name,
         totalFiles: plan.files.length,
-        bytesCopied,
+        bytesCopied: bytesOnDevice,
         totalBytes: plan.totalSizeBytes,
       });
 
@@ -81,7 +103,7 @@ export class SyncExecutor extends EventEmitter {
         const existing = await stat(dest).catch(() => null);
         if (existing && existing.size === file.sizeBytes) {
           skippedCount++;
-          bytesCopied += file.sizeBytes;
+          bytesOnDevice += file.sizeBytes;
           continue;
         }
         await copyFile(file.path, dest);
@@ -92,15 +114,18 @@ export class SyncExecutor extends EventEmitter {
           }
         }
         copiedCount++;
-        bytesCopied += file.sizeBytes;
+        bytesOnDevice += file.sizeBytes;
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        this.emitProgress({
-          state: "error",
-          message: `Failed copying ${file.name}: ${message}`,
-          copiedCount,
-        });
-        return;
+        const code = (err as NodeJS.ErrnoException | undefined)?.code;
+        if (code && FATAL_ERRNO.has(code)) {
+          this.emitProgress({
+            state: "error",
+            message: fatalMessage(code, copiedCount),
+            copiedCount,
+          });
+          return;
+        }
+        failures.push({ file: file.name, message: shortMessage(err) });
       }
     }
 
@@ -108,7 +133,9 @@ export class SyncExecutor extends EventEmitter {
       state: "done",
       copiedCount,
       skippedCount,
-      totalBytes: plan.totalSizeBytes,
+      failedCount: failures.length,
+      failures,
+      bytesOnDevice,
       durationMs: Date.now() - start,
     });
   }
@@ -134,4 +161,22 @@ async function fsyncFile(path: string): Promise<void> {
   } finally {
     await handle.close();
   }
+}
+
+function shortMessage(err: unknown): string {
+  if (err instanceof Error) return err.message.replace(/^Error:\s*/, "");
+  return String(err);
+}
+
+function fatalMessage(code: string, copiedCount: number): string {
+  if (code === "ENOSPC") {
+    return `Device full after ${copiedCount} ${copiedCount === 1 ? "file" : "files"}`;
+  }
+  if (code === "EROFS") {
+    return "Device became read-only mid-sync";
+  }
+  if (code === "EIO") {
+    return "Hardware I/O error — device may have been disconnected";
+  }
+  return `Sync stopped (${code})`;
 }

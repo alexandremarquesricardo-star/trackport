@@ -73,6 +73,18 @@ export interface SyncPlan {
   fits: boolean;
 }
 
+/**
+ * One per-file failure recorded during a sync. The executor doesn't bail on
+ * a single bad file — it keeps going and surfaces these at the end so the
+ * user sees exactly which files had problems and why.
+ */
+export interface SyncFailure {
+  /** Filename only (basename of source path), suitable for direct display. */
+  file: string;
+  /** Short human-readable reason. We strip Node's "Error:" prefix at emit. */
+  message: string;
+}
+
 export type SyncProgress =
   | { state: "preparing" }
   | {
@@ -87,7 +99,11 @@ export type SyncProgress =
       state: "done";
       copiedCount: number;
       skippedCount: number;
-      totalBytes: number;
+      failedCount: number;
+      /** Detailed per-file failures (length === failedCount). */
+      failures: SyncFailure[];
+      /** Bytes that actually ended up on the device (copied + already-there). */
+      bytesOnDevice: number;
       durationMs: number;
     }
   | { state: "error"; message: string; copiedCount: number };

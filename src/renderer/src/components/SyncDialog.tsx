@@ -275,21 +275,51 @@ function DoneView({
   state: Extract<SyncState, { phase: "done" }>;
   onClose: () => void;
 }): JSX.Element {
+  const hasFailures = state.failedCount > 0;
+  const titleClass = hasFailures
+    ? "sync-dialog__title sync-dialog__title--warn"
+    : "sync-dialog__title sync-dialog__title--success";
+  const titleText = hasFailures ? "Sync finished with errors" : "Sync complete";
   return (
     <>
-      <h2 className="sync-dialog__title sync-dialog__title--success">Sync complete</h2>
+      <h2 className={titleClass}>{titleText}</h2>
       <p className="sync-dialog__sub">
         {state.copiedCount.toLocaleString()} copied
         {state.skippedCount > 0 && (
           <>
             {" · "}
-            {state.skippedCount.toLocaleString()} already on device (skipped)
+            {state.skippedCount.toLocaleString()} skipped (already on device)
+          </>
+        )}
+        {hasFailures && (
+          <>
+            {" · "}
+            <span className="sync-dialog__failed-count">
+              {state.failedCount.toLocaleString()} failed
+            </span>
           </>
         )}
       </p>
       <p className="sync-dialog__sub sync-dialog__sub--mono">
-        {formatBytes(state.totalBytes)} in {formatDuration(state.durationMs)}
+        {formatBytes(state.bytesOnDevice)} on device · {formatDuration(state.durationMs)}
       </p>
+
+      {hasFailures && (
+        <details className="sync-dialog__failures">
+          <summary className="sync-dialog__failures-summary">
+            Show what failed ({state.failedCount.toLocaleString()})
+          </summary>
+          <ul className="sync-dialog__failures-list">
+            {state.failures.map((f, i) => (
+              <li key={`${i}-${f.file}`} className="sync-dialog__failure">
+                <span className="sync-dialog__failure-file">{f.file}</span>
+                <span className="sync-dialog__failure-msg">{f.message}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
       <div className="sync-dialog__actions">
         <button className="sync-dialog__btn sync-dialog__btn--primary" type="button" onClick={onClose}>
           Done
