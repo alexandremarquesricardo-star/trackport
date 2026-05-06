@@ -58,8 +58,14 @@ function DeviceCard({ device }: { device: Device }): JSX.Element {
           <span className="app__device-mount">{device.mountPath}</span>
         </div>
       </div>
-      <button className="app__btn app__btn--primary" type="button" disabled>
+      <button
+        className="app__btn app__btn--primary"
+        type="button"
+        disabled
+        title="Sync flow lands in the next iteration"
+      >
         Sync to this device
+        <span className="app__btn-badge">soon</span>
       </button>
     </li>
   );

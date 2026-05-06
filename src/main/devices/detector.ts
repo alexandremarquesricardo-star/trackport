@@ -4,7 +4,7 @@ import type { Device } from "../../shared/devices";
 
 const POLL_INTERVAL_MS = 1500;
 
-interface ChangedEvent {
+export interface ChangedEvent {
   devices: Device[];
   added: Device[];
   removed: Device[];
@@ -51,8 +51,12 @@ export class DeviceDetector extends EventEmitter {
         const device = toDevice(drive);
         next.set(device.id, device);
       }
-      this.diffAndEmit(next);
+      // Snapshot must be updated BEFORE we emit "changed". Listeners may call
+      // back into detector.list() synchronously inside the emit, and they
+      // expect the new state.
+      const prev = this.snapshot;
       this.snapshot = next;
+      this.diffAndEmit(prev, next);
     } catch (err) {
       this.emit("error", err);
     } finally {
@@ -60,13 +64,13 @@ export class DeviceDetector extends EventEmitter {
     }
   }
 
-  private diffAndEmit(next: Map<string, Device>): void {
+  private diffAndEmit(prev: Map<string, Device>, next: Map<string, Device>): void {
     const added: Device[] = [];
     const removed: Device[] = [];
     for (const [id, dev] of next) {
-      if (!this.snapshot.has(id)) added.push(dev);
+      if (!prev.has(id)) added.push(dev);
     }
-    for (const [id, dev] of this.snapshot) {
+    for (const [id, dev] of prev) {
       if (!next.has(id)) removed.push(dev);
     }
     if (added.length === 0 && removed.length === 0) return;
