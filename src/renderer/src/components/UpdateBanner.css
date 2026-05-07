@@ -1,0 +1,115 @@
+.update-banner {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(540px, calc(100vw - 32px));
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(17, 20, 27, 0.96);
+  border: 1px solid rgba(99, 102, 241, 0.32);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.5);
+  z-index: 220;
+  animation: update-banner-rise 220ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.update-banner--ready {
+  border-color: rgba(110, 231, 183, 0.45);
+}
+
+.update-banner__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.update-banner__title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e6e8ee;
+}
+
+.update-banner--available .update-banner__title {
+  color: #c7d2fe;
+}
+
+.update-banner--ready .update-banner__title {
+  color: #a7f3d0;
+}
+
+.update-banner__sub {
+  font-size: 12px;
+  color: #9aa3b2;
+  font-variant-numeric: tabular-nums;
+}
+
+.update-banner__actions {
+  display: flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.update-banner__btn {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    transform 120ms ease;
+  white-space: nowrap;
+}
+
+.update-banner__btn--primary {
+  background: linear-gradient(135deg, #6366f1 0%, #38bdf8 100%);
+  color: white;
+}
+
+.update-banner__btn--primary:hover {
+  transform: translateY(-1px);
+}
+
+.update-banner__btn--ghost {
+  background: transparent;
+  color: #cbd5e1;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.update-banner__btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.update-banner__progress {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.update-banner__progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1 0%, #38bdf8 100%);
+  transition: width 200ms ease;
+}
+
+@keyframes update-banner-rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}

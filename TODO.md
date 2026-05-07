@@ -7,7 +7,7 @@
 
 ## Where we are
 
-**Status:** v0.1.0 — local Electron app, 25 commits on `main`, CI green, working end-to-end on Windows.
+**Status:** v0.1.0 — local Electron app, 26 commits on `main`, CI green, working end-to-end on Windows.
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -39,7 +39,8 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 21  | `75235b3`             | Scanner test suite — 15 tests with temp-dir fixtures, cache-hit identity check   |
 | 22  | `61872e3`             | Native app menu — proper Mac app menu, About panel, no more "Electron"           |
 | 23  | `5cb1868`             | Clickable paths — library root + device mount open in OS file manager            |
-| 24  | _next_                | Windows distribution polish — LICENSE, publisher, NSIS license, signing-ready    |
+| 24  | `03d112a`             | Windows distribution polish — LICENSE, publisher, NSIS license, signing-ready    |
+| 25  | _next_                | Auto-update runtime — electron-updater, top banner with download / restart flow  |
 
 ### What works today
 
@@ -73,6 +74,9 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
   auto-hidden on Win/Linux to keep the focused-tool aesthetic
 - Library root and device mount paths are clickable — opens the folder in
   Explorer / Finder / Files for quick spelunking
+- Auto-update via electron-updater: checks GitHub Releases on launch
+  (after a 5s delay), surfaces a top banner with Download / Restart-now
+  flow; pure-state-machine reducer is unit-tested
 - CI typechecks, lints, format-checks, tests, and builds on every push to main / PR
 
 ---

@@ -4,6 +4,7 @@ import type { TrackPortApi } from "../shared/api";
 import type { FitStrategyId } from "../shared/fit";
 import type { Library } from "../shared/library";
 import type { SyncPlan, SyncPlanId, SyncProgress } from "../shared/sync";
+import type { UpdateState } from "../shared/updater";
 
 const DEVICES_LIST_CHANNEL = "devices:list";
 const DEVICES_CHANGED_CHANNEL = "devices:changed";
@@ -20,6 +21,10 @@ const LIBRARY_GET = "library:get";
 const LIBRARY_ADD = "library:add";
 const LIBRARY_REMOVE = "library:remove";
 const LIBRARY_RESCAN = "library:rescan";
+const UPDATER_GET_STATE = "updater:get-state";
+const UPDATER_DOWNLOAD = "updater:download";
+const UPDATER_QUIT_AND_INSTALL = "updater:quit-and-install";
+const UPDATER_STATE_EVENT = "updater:state";
 
 const api: TrackPortApi = {
   appVersion: "0.1.0",
@@ -71,6 +76,18 @@ const api: TrackPortApi = {
     pathForFile: (file: File): string => webUtils.getPathForFile(file),
     openInFileManager: (path: string) =>
       ipcRenderer.invoke(SHELL_OPEN_PATH, path) as Promise<boolean>,
+  },
+  updater: {
+    getState: () => ipcRenderer.invoke(UPDATER_GET_STATE) as Promise<UpdateState>,
+    onChange: (cb) => {
+      const handler = (_event: Electron.IpcRendererEvent, state: UpdateState): void => cb(state);
+      ipcRenderer.on(UPDATER_STATE_EVENT, handler);
+      return () => {
+        ipcRenderer.removeListener(UPDATER_STATE_EVENT, handler);
+      };
+    },
+    downloadUpdate: () => ipcRenderer.invoke(UPDATER_DOWNLOAD) as Promise<void>,
+    quitAndInstall: () => ipcRenderer.invoke(UPDATER_QUIT_AND_INSTALL) as Promise<void>,
   },
 };
 

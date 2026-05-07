@@ -10,12 +10,15 @@ import { PreferencesStore } from "./preferences/store";
 import { registerPreferencesHandlers } from "./preferences/ipc";
 import { scanAudioFiles } from "./sync/audio-scan";
 import { bindSyncEventsToWindow, registerSyncHandlers } from "./sync/ipc";
+import { UpdaterController } from "./updater/controller";
+import { bindUpdaterEventsToWindow, registerUpdaterHandlers } from "./updater/ipc";
 import type { AudioFile } from "../shared/sync";
 import { bestFitForBounds, type Rect } from "../shared/window";
 
 const detector = new DeviceDetector();
 const preferences = new PreferencesStore();
 const library = new LibraryStore();
+const updater = new UpdaterController();
 
 // In dev the icon lives next to the source tree; in packaged builds it's
 // shipped via `extraResources` in electron-builder.yml. Linux relies on this
@@ -98,6 +101,7 @@ function createWindow(): BrowserWindow {
 
   bindDeviceEventsToWindow(mainWindow, detector);
   bindSyncEventsToWindow(mainWindow);
+  bindUpdaterEventsToWindow(mainWindow, updater);
   bindWindowStatePersistence(mainWindow);
 
   if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) {
@@ -161,7 +165,11 @@ app.whenReady().then(async () => {
   registerPreferencesHandlers(preferences);
   registerLibraryHandlers(library);
   registerSyncHandlers({ resolveTracks: makeResolveTracks(library) });
+  registerUpdaterHandlers(updater);
   registerShellHandlers();
+  // Kicks off a delayed first check via setTimeout — never blocks startup.
+  // No-op in dev (electron-updater can't actually check unsigned dev runs).
+  updater.start();
   detector.on("error", (err) => {
     console.error("[DeviceDetector] poll error:", err);
   });

@@ -5,10 +5,12 @@ import { useDeviceProfile } from "./hooks/useDeviceProfile";
 import { useFolderDrop } from "./hooks/useFolderDrop";
 import { useLibrary } from "./hooks/useLibrary";
 import { useSync } from "./hooks/useSync";
+import { useUpdater } from "./hooks/useUpdater";
 import { BrandMark } from "./components/BrandMark";
 import { LibraryDropOverlay } from "./components/LibraryDropOverlay";
 import { LibrarySection } from "./components/LibrarySection";
 import { SyncDialog } from "./components/SyncDialog";
+import { UpdateBanner } from "./components/UpdateBanner";
 import type { Device } from "../../shared/devices";
 import type { Library } from "../../shared/library";
 import { PROFILES } from "../../shared/profiles";
@@ -19,6 +21,7 @@ export function App(): JSX.Element {
   const { devices, loading, error } = useDevices();
   const lib = useLibrary();
   const sync = useSync();
+  const updater = useUpdater();
   const [flash, setFlash] = useState<string | null>(null);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -114,6 +117,12 @@ export function App(): JSX.Element {
         onClose={sync.close}
         onApplyFit={sync.applyFit}
         onSetWipeDevice={sync.setWipeDevice}
+      />
+
+      <UpdateBanner
+        state={updater.state}
+        onDownload={updater.download}
+        onInstall={updater.install}
       />
 
       <LibraryDropOverlay visible={isDragOver} willReplace={lib.library !== null} />

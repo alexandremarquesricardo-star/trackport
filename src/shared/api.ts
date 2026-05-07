@@ -2,6 +2,7 @@ import type { DevicesApi } from "./devices";
 import type { LibraryApi } from "./library";
 import type { PreferencesApi } from "./preferences";
 import type { SyncApi } from "./sync";
+import type { UpdaterApi } from "./updater";
 
 /**
  * Misc filesystem helpers needed by the renderer that don't fit cleanly
@@ -33,4 +34,5 @@ export interface TrackPortApi {
   preferences: PreferencesApi;
   library: LibraryApi;
   files: FilesApi;
+  updater: UpdaterApi;
 }
