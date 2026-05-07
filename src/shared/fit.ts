@@ -78,10 +78,7 @@ export function computeFit(
  * even when they don't quite fit (degenerate case: even dropping all but
  * one file is still larger than the device) — the UI filters by `fits`.
  */
-export function computeFitSuggestions(
-  files: AudioFile[],
-  freeBytes: number,
-): FitSuggestion[] {
+export function computeFitSuggestions(files: AudioFile[], freeBytes: number): FitSuggestion[] {
   if (files.length === 0) return [];
   const totalBytes = files.reduce((a, f) => a + f.sizeBytes, 0);
   if (totalBytes <= freeBytes) return [];

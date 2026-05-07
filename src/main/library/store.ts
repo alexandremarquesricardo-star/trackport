@@ -98,10 +98,7 @@ export class LibraryStore {
    * Returns true if anything actually changed (tracks differ from cache),
    * which lets callers skip downstream work when nothing moved.
    */
-  applyScanResult(
-    result: ScanResult,
-    opts: { updateScannedAt: boolean },
-  ): boolean {
+  applyScanResult(result: ScanResult, opts: { updateScannedAt: boolean }): boolean {
     if (!this.state.library) return false;
     const changed = !sameTrackIndex(this.state.tracks, result.tracks);
     this.state.tracks = result.tracks;
@@ -176,8 +173,7 @@ function sanitise(input: unknown): LibraryFileShape {
         root: candidate.root,
         addedAt:
           typeof candidate.addedAt === "string" ? candidate.addedAt : new Date().toISOString(),
-        lastScannedAt:
-          typeof candidate.lastScannedAt === "string" ? candidate.lastScannedAt : null,
+        lastScannedAt: typeof candidate.lastScannedAt === "string" ? candidate.lastScannedAt : null,
         trackCount: typeof candidate.trackCount === "number" ? candidate.trackCount : 0,
         totalBytes: typeof candidate.totalBytes === "number" ? candidate.totalBytes : 0,
       };

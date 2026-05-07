@@ -21,9 +21,5 @@
     "useDefineForClassFields": true,
     "outDir": "./out-tsc/web"
   },
-  "include": [
-    "src/renderer/src/**/*.ts",
-    "src/renderer/src/**/*.tsx",
-    "src/shared/**/*.ts"
-  ]
+  "include": ["src/renderer/src/**/*.ts", "src/renderer/src/**/*.tsx", "src/shared/**/*.ts"]
 }

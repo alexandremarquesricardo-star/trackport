@@ -54,6 +54,17 @@ jobs:
         # which rebuilds drivelist's native binding against Electron's ABI.
         run: npm ci
 
+      - name: Lint
+        # ESLint flat config covers main / preload / renderer / build scripts.
+        # Runs before build so a style/correctness regression fails fast,
+        # before paying for the slower bundle step.
+        run: npm run lint
+
+      - name: Format check
+        # Prettier formatting is part of the contract — CI fails if anything
+        # drifts. Cheap (~1s); keeps `git diff` tidy on every PR.
+        run: npm run format:check
+
       - name: Typecheck + production build
         # `npm run build` chains `npm run typecheck && electron-vite build`,
         # so this single step exercises the strict TS project references

@@ -26,7 +26,12 @@ export function LibrarySection({
         <div className="library__empty-text">
           Add your music folder once, sync from it on every device — no folder picker needed.
         </div>
-        <button className="library__btn library__btn--primary" type="button" onClick={onAdd} disabled={busy}>
+        <button
+          className="library__btn library__btn--primary"
+          type="button"
+          onClick={onAdd}
+          disabled={busy}
+        >
           {busy ? "Picking…" : "Add library"}
         </button>
       </section>
@@ -43,8 +48,7 @@ export function LibrarySection({
           {library.root}
         </div>
         <div className="library__stats">
-          {library.trackCount.toLocaleString()}{" "}
-          {library.trackCount === 1 ? "track" : "tracks"} ·{" "}
+          {library.trackCount.toLocaleString()} {library.trackCount === 1 ? "track" : "tracks"} ·{" "}
           {formatBytes(library.totalBytes)}
           {library.lastScannedAt && (
             <>

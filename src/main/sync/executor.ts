@@ -3,12 +3,7 @@ import { copyFile, open, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { getProfile } from "../../shared/profiles";
-import type {
-  SyncFailure,
-  SyncPlan,
-  SyncPlanId,
-  SyncProgress,
-} from "../../shared/sync";
+import type { SyncFailure, SyncPlan, SyncPlanId, SyncProgress } from "../../shared/sync";
 
 const DEFAULT_TRANSMISSION_DELAY_MS = 150;
 
@@ -66,10 +61,9 @@ export class SyncExecutor extends EventEmitter {
     this.emitProgress({ state: "preparing" });
 
     const profile = getProfile(plan.profileId);
-    const interFileDelayMs =
-      plan.preserveOrder
-        ? profile.quirks.transmissionTimeOrderDelayMs ?? DEFAULT_TRANSMISSION_DELAY_MS
-        : 0;
+    const interFileDelayMs = plan.preserveOrder
+      ? (profile.quirks.transmissionTimeOrderDelayMs ?? DEFAULT_TRANSMISSION_DELAY_MS)
+      : 0;
 
     let bytesOnDevice = 0;
     let copiedCount = 0;

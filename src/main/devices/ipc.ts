@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from "electron";
+import { type BrowserWindow, ipcMain } from "electron";
 import type { Device } from "../../shared/devices";
 import type { ChangedEvent, DeviceDetector } from "./detector";
 

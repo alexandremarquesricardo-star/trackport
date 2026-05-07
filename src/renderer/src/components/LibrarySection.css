@@ -78,7 +78,10 @@
   background: rgba(255, 255, 255, 0.04);
   color: #e6e8ee;
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease, opacity 120ms ease;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    opacity 120ms ease;
 }
 
 .library__btn:hover:not(:disabled) {

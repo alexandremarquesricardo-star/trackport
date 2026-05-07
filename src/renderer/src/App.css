@@ -3,10 +3,8 @@
   flex-direction: column;
   height: 100%;
   padding: 28px 48px 44px;
-  background:
-    radial-gradient(circle at 12% -5%, rgba(99, 102, 241, 0.18), transparent 42%),
-    radial-gradient(circle at 92% 105%, rgba(56, 189, 248, 0.14), transparent 50%),
-    #0b0d12;
+  background: radial-gradient(circle at 12% -5%, rgba(99, 102, 241, 0.18), transparent 42%),
+    radial-gradient(circle at 92% 105%, rgba(56, 189, 248, 0.14), transparent 50%), #0b0d12;
 }
 
 .app__header {
@@ -198,7 +196,9 @@
   border-radius: 8px;
   padding: 5px 8px;
   cursor: pointer;
-  transition: border-color 120ms ease, background 120ms ease;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
 }
 
 .app__device-profile-select:hover:not(:disabled) {

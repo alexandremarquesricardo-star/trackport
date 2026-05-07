@@ -18,10 +18,7 @@ export interface UseDeviceProfileResult {
  * Writes are fire-and-forget — the IPC call goes through the debounced
  * store, so rapid selector changes coalesce into a single disk write.
  */
-export function useDeviceProfile(
-  deviceId: string,
-  deviceLabel: string,
-): UseDeviceProfileResult {
+export function useDeviceProfile(deviceId: string, deviceLabel: string): UseDeviceProfileResult {
   const [profileId, setLocalProfileId] = useState<string>(() => autoDetectProfile(deviceLabel));
 
   useEffect(() => {

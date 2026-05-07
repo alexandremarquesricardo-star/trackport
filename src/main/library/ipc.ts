@@ -18,9 +18,7 @@ export function registerLibraryHandlers(store: LibraryStore): void {
       buttonLabel: "Use this folder",
       properties: ["openDirectory" as const, "dontAddToRecent" as const],
     };
-    const result = win
-      ? await dialog.showOpenDialog(win, opts)
-      : await dialog.showOpenDialog(opts);
+    const result = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
     if (result.canceled || result.filePaths.length === 0) return null;
 
     const root = result.filePaths[0];

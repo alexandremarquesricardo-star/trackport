@@ -71,8 +71,7 @@ function PreflightView({
         From <code className="sync-dialog__path">{plan.sourceFolder}</code>
       </p>
       <p className="sync-dialog__sub">
-        To <strong>{device.label}</strong> ({device.mountPath})
-        {" · "}
+        To <strong>{device.label}</strong> ({device.mountPath}){" · "}
         <span className="sync-dialog__profile">{plan.profileLabel}</span>
       </p>
 
@@ -95,8 +94,8 @@ function PreflightView({
         <div className="sync-dialog__note">
           {plan.unsupportedFiles.length.toLocaleString()} file
           {plan.unsupportedFiles.length === 1 ? "" : "s"} ({formatBytes(skippedSize)}) skipped —
-          format not supported by <strong>{plan.profileLabel}</strong>. Pick a different profile
-          on the device card if you want to include them.
+          format not supported by <strong>{plan.profileLabel}</strong>. Pick a different profile on
+          the device card if you want to include them.
         </div>
       )}
 
@@ -110,8 +109,8 @@ function PreflightView({
 
       {!plan.fits && plan.files.length > 0 && (
         <div className="sync-dialog__warn">
-          <strong>{formatBytes(overshoot)} too large.</strong> Pick a strategy below, or close
-          and trim the source folder.
+          <strong>{formatBytes(overshoot)} too large.</strong> Pick a strategy below, or close and
+          trim the source folder.
         </div>
       )}
 
@@ -139,15 +138,14 @@ function PreflightView({
               ? "keeping the first " + plan.files.length.toLocaleString() + " tracks"
               : "dropping the " + plan.oversizedFiles.length.toLocaleString() + " largest"}
           </strong>
-          . {plan.oversizedFiles.length.toLocaleString()} skipped (
-          {formatBytes(oversizedSize)}).
+          . {plan.oversizedFiles.length.toLocaleString()} skipped ({formatBytes(oversizedSize)}).
         </div>
       )}
 
       {plan.files.length === 0 && plan.unsupportedFiles.length === 0 && (
         <div className="sync-dialog__warn">
-          No audio files found in this folder. Supported: MP3, WAV, FLAC, M4A, AAC, WMA, OGG,
-          OPUS, AIF, AIFF, APE.
+          No audio files found in this folder. Supported: MP3, WAV, FLAC, M4A, AAC, WMA, OGG, OPUS,
+          AIF, AIFF, APE.
         </div>
       )}
 
@@ -159,7 +157,11 @@ function PreflightView({
       )}
 
       <div className="sync-dialog__actions">
-        <button className="sync-dialog__btn sync-dialog__btn--ghost" type="button" onClick={onClose}>
+        <button
+          className="sync-dialog__btn sync-dialog__btn--ghost"
+          type="button"
+          onClick={onClose}
+        >
           Cancel
         </button>
         <button
@@ -209,9 +211,9 @@ function TrackOrderPreview({
       </ol>
       {preserveOrder && (
         <p className="sync-dialog__tracks-hint">
-          On <strong>{profileLabel}</strong>, this is the order the device will play them. We
-          copy one file at a time and flush between writes so the device records distinct
-          transmission timestamps.
+          On <strong>{profileLabel}</strong>, this is the order the device will play them. We copy
+          one file at a time and flush between writes so the device records distinct transmission
+          timestamps.
         </p>
       )}
     </details>
@@ -260,7 +262,11 @@ function CopyingView({
       </p>
 
       <div className="sync-dialog__actions">
-        <button className="sync-dialog__btn sync-dialog__btn--ghost" type="button" onClick={onCancel}>
+        <button
+          className="sync-dialog__btn sync-dialog__btn--ghost"
+          type="button"
+          onClick={onCancel}
+        >
           Cancel sync
         </button>
       </div>
@@ -321,7 +327,11 @@ function DoneView({
       )}
 
       <div className="sync-dialog__actions">
-        <button className="sync-dialog__btn sync-dialog__btn--primary" type="button" onClick={onClose}>
+        <button
+          className="sync-dialog__btn sync-dialog__btn--primary"
+          type="button"
+          onClick={onClose}
+        >
           Done
         </button>
       </div>
@@ -341,7 +351,11 @@ function ErrorView({
       <h2 className="sync-dialog__title sync-dialog__title--error">Sync stopped</h2>
       <p className="sync-dialog__sub">{state.message}</p>
       <div className="sync-dialog__actions">
-        <button className="sync-dialog__btn sync-dialog__btn--primary" type="button" onClick={onClose}>
+        <button
+          className="sync-dialog__btn sync-dialog__btn--primary"
+          type="button"
+          onClick={onClose}
+        >
           Close
         </button>
       </div>

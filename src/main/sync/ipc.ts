@@ -31,21 +31,16 @@ export function registerSyncHandlers(deps: SyncHandlerDeps = {}): void {
       buttonLabel: "Use this folder",
       properties: ["openDirectory" as const, "dontAddToRecent" as const],
     };
-    const result = win
-      ? await dialog.showOpenDialog(win, opts)
-      : await dialog.showOpenDialog(opts);
+    const result = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
     if (result.canceled || result.filePaths.length === 0) return null;
     return result.filePaths[0];
   });
 
-  ipcMain.handle(
-    SYNC_BUILD_PLAN,
-    async (_event, input: BuildPlanInput): Promise<SyncPlan> => {
-      const plan = await buildPlan(input, deps.resolveTracks);
-      plans.set(plan.id, plan);
-      return plan;
-    },
-  );
+  ipcMain.handle(SYNC_BUILD_PLAN, async (_event, input: BuildPlanInput): Promise<SyncPlan> => {
+    const plan = await buildPlan(input, deps.resolveTracks);
+    plans.set(plan.id, plan);
+    return plan;
+  });
 
   ipcMain.handle(
     SYNC_APPLY_FIT,

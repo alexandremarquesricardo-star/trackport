@@ -1,0 +1,9 @@
+node_modules/
+out/
+out-tsc/
+release/
+build/icons/
+build/icon.png
+build/icon.ico
+build/icon.svg
+package-lock.json

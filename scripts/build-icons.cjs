@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-var-requires */
 /**
  * Rasterize build/icon.svg into the assets electron-builder needs.
  *
@@ -48,16 +47,11 @@ async function main() {
   console.log(`[icons] wrote ${SIZES.length} PNGs to build/icons/`);
 
   // Master used by electron-builder for macOS .icns auto-conversion + Linux.
-  fs.copyFileSync(
-    path.join(ICONS_DIR, "1024x1024.png"),
-    path.join(BUILD_DIR, "icon.png"),
-  );
+  fs.copyFileSync(path.join(ICONS_DIR, "1024x1024.png"), path.join(BUILD_DIR, "icon.png"));
   console.log("[icons] wrote build/icon.png");
 
   // Windows .ico: bundle the smaller sizes for crisp Start menu / taskbar / explorer.
-  const icoBuffers = ICO_SIZES.map((s) =>
-    fs.readFileSync(path.join(ICONS_DIR, `${s}x${s}.png`)),
-  );
+  const icoBuffers = ICO_SIZES.map((s) => fs.readFileSync(path.join(ICONS_DIR, `${s}x${s}.png`)));
   const icoBuffer = await pngToIco(icoBuffers);
   fs.writeFileSync(path.join(BUILD_DIR, "icon.ico"), icoBuffer);
   console.log("[icons] wrote build/icon.ico");

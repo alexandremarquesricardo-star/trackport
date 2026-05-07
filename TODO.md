@@ -7,28 +7,29 @@
 
 ## Where we are
 
-**Status:** v0.1.0 — local Electron app, 14 commits on `main`, CI green, working end-to-end on Windows.
+**Status:** v0.1.0 — local Electron app, 15 commits on `main`, CI green, working end-to-end on Windows.
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
 
 ### Shipped
 
-| # | Commit | What landed |
-|---|---|---|
-| 1 | `a28a27b` | Project scaffold (Electron + React + TS + Vite) |
-| 2 | `0305eca` | USB device detection (drivelist + IPC + live UI) |
-| 3 | `ae4e6a4` | Removal-bug fix + "soon" badge |
-| 4 | `4d49e36` | Sync vertical slice (folder picker → preflight → copy with progress) |
-| 5 | `d28b415` | Device profiles (filter unsupported formats per device) |
-| 6 | `84cb8ba` | **Order preservation for Shokz / transmission-time devices** (wedge) |
-| 7 | `f088890` | Profile persistence (per-device choice across launches) |
-| 8 | `2c74eea` | Smart fit (two strategies that turn oversize plans into copyable ones) |
-| 9 | `500314d` + `afbb80c` | GitHub Actions CI |
-| 10 | `86bb92e` | Library import (persistent music root) |
-| 11 | `7d874fd` | Per-file copy-error recovery |
-| 12 | `788bdc0` | App icon + window chrome polish (mark + multi-res ico/png + header tighten-up) |
-| 13 | _next_ | Cached library index — mtime-based incremental scan, planner reads cached tracks |
+| #   | Commit                | What landed                                                                      |
+| --- | --------------------- | -------------------------------------------------------------------------------- |
+| 1   | `a28a27b`             | Project scaffold (Electron + React + TS + Vite)                                  |
+| 2   | `0305eca`             | USB device detection (drivelist + IPC + live UI)                                 |
+| 3   | `ae4e6a4`             | Removal-bug fix + "soon" badge                                                   |
+| 4   | `4d49e36`             | Sync vertical slice (folder picker → preflight → copy with progress)             |
+| 5   | `d28b415`             | Device profiles (filter unsupported formats per device)                          |
+| 6   | `84cb8ba`             | **Order preservation for Shokz / transmission-time devices** (wedge)             |
+| 7   | `f088890`             | Profile persistence (per-device choice across launches)                          |
+| 8   | `2c74eea`             | Smart fit (two strategies that turn oversize plans into copyable ones)           |
+| 9   | `500314d` + `afbb80c` | GitHub Actions CI                                                                |
+| 10  | `86bb92e`             | Library import (persistent music root)                                           |
+| 11  | `7d874fd`             | Per-file copy-error recovery                                                     |
+| 12  | `788bdc0`             | App icon + window chrome polish (mark + multi-res ico/png + header tighten-up)   |
+| 13  | `cfb28b2`             | Cached library index — mtime-based incremental scan, planner reads cached tracks |
+| 14  | _next_                | ESLint + Prettier in CI (flat config, format check, lint gate)                   |
 
 ### What works today
 
@@ -42,19 +43,16 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 - Continues past per-file copy errors, surfaces them in the done state
 - Caches the library track index (paths + sizes + mtimes) and reuses it on
   every sync — only re-stats files in directories whose mtime moved
-- CI typecheck + build on every push to main / PR
+- CI typechecks, lints, format-checks, and builds on every push to main / PR
 
 ---
 
 ## Next up (in order of leverage)
 
-### 1. Linting + Prettier in CI
-- ESLint + Prettier configs, `npm run lint` script, add to CI matrix
-- Catches dumb bugs and keeps formatting consistent
-- Cheap, durable
+### 1. Spotify metadata-only matcher (multi-iteration arc)
 
-### 2. Spotify metadata-only matcher (multi-iteration arc)
 The remaining big wedge feature. Will need:
+
 - Spotify Developer app (client ID / secret) — register at developer.spotify.com
 - Hono backend on Railway holding the secret + brokering token requests
 - New IPC: `library.matchAgainstSpotify(playlistUrl)` → returns `{ matched, missing }`
@@ -63,6 +61,7 @@ The remaining big wedge feature. Will need:
 - Hard rail: metadata only, no audio extraction (already in the README)
 
 Roughly 3-4 iterations:
+
 1. Backend skeleton on Railway + auth round-trip
 2. Track list fetch from Spotify URL
 3. Local library matcher (artist/title fuzzy match)
@@ -97,6 +96,7 @@ npm run dist:linux  # AppImage
 ```
 
 Persistent state lives at:
+
 - Windows: `%APPDATA%\TrackPort\preferences.json` + `library.json`
 - macOS: `~/Library/Application Support/TrackPort/...`
 - Linux: `~/.config/TrackPort/...`

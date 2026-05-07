@@ -41,10 +41,7 @@ const EMPTY_RESULT: ScanResult = { tracks: [], dirMtimes: {} };
  * size and mtime won't be caught, but the user has a Re-scan button if
  * they ever need a hard refresh.
  */
-export async function incrementalScan(
-  root: string,
-  prev: ScanResult | null,
-): Promise<ScanResult> {
+export async function incrementalScan(root: string, prev: ScanResult | null): Promise<ScanResult> {
   const prevState = prev ?? EMPTY_RESULT;
   const prevTracksByDir = groupByDir(prevState.tracks);
 
