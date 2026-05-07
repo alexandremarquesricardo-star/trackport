@@ -7,7 +7,7 @@
 
 ## Where we are
 
-**Status:** v0.1.0 — local Electron app, 18 commits on `main`, CI green, working end-to-end on Windows.
+**Status:** v0.1.0 — local Electron app, 19 commits on `main`, CI green, working end-to-end on Windows.
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -32,7 +32,8 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 14  | `1972cc2`             | ESLint + Prettier in CI (flat config, format check, lint gate)                   |
 | 15  | `2625b94`             | "Clear device first" toggle — wipe phase before copy, default ON for Shokz       |
 | 16  | `1c8ff40`             | Per-strategy fit-drop preview — see what gets cut before applying a fit          |
-| 17  | _next_                | Modal a11y + keyboard shortcuts (Esc/Enter/focus trap) + global error boundary   |
+| 17  | `c479667`             | Modal a11y + keyboard shortcuts (Esc/Enter/focus trap) + global error boundary   |
+| 18  | _next_                | Vitest test infrastructure + first 21 tests on fit / sort, gated in CI           |
 
 ### What works today
 
@@ -53,7 +54,8 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
   initial primary focus, focus restored to trigger on close)
 - Top-level React error boundary recovers a renderer crash with a Reload action
   instead of a black window
-- CI typechecks, lints, format-checks, and builds on every push to main / PR
+- Vitest unit tests covering the smart-fit logic and natural-sort behaviour
+- CI typechecks, lints, format-checks, tests, and builds on every push to main / PR
 
 ---
 

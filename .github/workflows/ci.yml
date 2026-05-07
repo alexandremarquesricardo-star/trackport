@@ -65,6 +65,11 @@ jobs:
         # drifts. Cheap (~1s); keeps `git diff` tidy on every PR.
         run: npm run format:check
 
+      - name: Unit tests
+        # Vitest covers the pure-logic modules (fit, sort) — fast, no
+        # filesystem or Electron required. Failures here block the build.
+        run: npm test
+
       - name: Typecheck + production build
         # `npm run build` chains `npm run typecheck && electron-vite build`,
         # so this single step exercises the strict TS project references
