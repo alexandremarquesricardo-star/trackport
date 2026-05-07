@@ -1,19 +1,49 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import "./App.css";
 import { useDevices } from "./hooks/useDevices";
 import { useDeviceProfile } from "./hooks/useDeviceProfile";
+import { useFolderDrop } from "./hooks/useFolderDrop";
 import { useLibrary } from "./hooks/useLibrary";
 import { useSync } from "./hooks/useSync";
 import { BrandMark } from "./components/BrandMark";
+import { LibraryDropOverlay } from "./components/LibraryDropOverlay";
 import { LibrarySection } from "./components/LibrarySection";
 import { SyncDialog } from "./components/SyncDialog";
 import type { Device } from "../../shared/devices";
 import type { Library } from "../../shared/library";
 import { PROFILES } from "../../shared/profiles";
 
+const FLASH_DURATION_MS = 4000;
+
 export function App(): JSX.Element {
   const { devices, loading, error } = useDevices();
   const lib = useLibrary();
   const sync = useSync();
+  const [flash, setFlash] = useState<string | null>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showFlash = useCallback((message: string): void => {
+    setFlash(message);
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setFlash(null), FLASH_DURATION_MS);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+    };
+  }, []);
+
+  const onFolderDrop = useCallback(
+    (path: string) => {
+      void lib.add(path).then((added) => {
+        if (added) showFlash("Library updated.");
+      });
+    },
+    [lib, showFlash],
+  );
+
+  const { isDragOver } = useFolderDrop({ onFolder: onFolderDrop, onReject: showFlash });
 
   return (
     <main className="app">
@@ -85,6 +115,14 @@ export function App(): JSX.Element {
         onApplyFit={sync.applyFit}
         onSetWipeDevice={sync.setWipeDevice}
       />
+
+      <LibraryDropOverlay visible={isDragOver} willReplace={lib.library !== null} />
+
+      {flash && (
+        <div className="app__flash" role="status" aria-live="polite">
+          {flash}
+        </div>
+      )}
     </main>
   );
 }

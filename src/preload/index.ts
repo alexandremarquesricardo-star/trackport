@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from "electron";
+import { contextBridge, ipcRenderer, webUtils } from "electron";
 import type { Device } from "../shared/devices";
 import type { TrackPortApi } from "../shared/api";
 import type { FitStrategyId } from "../shared/fit";
@@ -58,9 +58,16 @@ const api: TrackPortApi = {
   },
   library: {
     get: () => ipcRenderer.invoke(LIBRARY_GET) as Promise<Library | null>,
-    add: () => ipcRenderer.invoke(LIBRARY_ADD) as Promise<Library | null>,
+    add: (path?: string) =>
+      ipcRenderer.invoke(LIBRARY_ADD, path ?? null) as Promise<Library | null>,
     remove: () => ipcRenderer.invoke(LIBRARY_REMOVE) as Promise<void>,
     rescan: () => ipcRenderer.invoke(LIBRARY_RESCAN) as Promise<Library | null>,
+  },
+  files: {
+    // webUtils.getPathForFile is the supported way to extract a filesystem
+    // path from a File object in Electron 32+. The deprecated File.path
+    // property may be removed entirely in future Electron majors.
+    pathForFile: (file: File): string => webUtils.getPathForFile(file),
   },
 };
 

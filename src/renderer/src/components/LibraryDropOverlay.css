@@ -1,0 +1,52 @@
+.library-drop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: rgba(11, 13, 18, 0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 200;
+  pointer-events: none;
+  animation: library-drop-fade 120ms ease-out;
+}
+
+.library-drop__panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 36px 56px;
+  border-radius: 20px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 2px dashed rgba(99, 102, 241, 0.55);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+.library-drop__title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  background: linear-gradient(135deg, #818cf8 0%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+}
+
+.library-drop__sub {
+  font-size: 13px;
+  color: #9aa3b2;
+  text-align: center;
+}
+
+@keyframes library-drop-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

@@ -275,3 +275,33 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
+
+.app__flash {
+  position: fixed;
+  left: 50%;
+  bottom: 32px;
+  transform: translateX(-50%);
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(17, 20, 27, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #e6e8ee;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  z-index: 250;
+  animation: app-flash-rise 220ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  max-width: 80vw;
+  text-align: center;
+}
+
+@keyframes app-flash-rise {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}

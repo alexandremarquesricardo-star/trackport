@@ -29,11 +29,22 @@ export interface LibraryApi {
   /** Resolves to the stored library, or null if none is set. */
   get: () => Promise<Library | null>;
   /**
-   * Open a folder picker, set the picked folder as the library root, and
-   * trigger an initial scan. Resolves to the new library, or null if the
-   * user cancelled the picker.
+   * Set the library root and trigger an initial scan.
+   *
+   * If `path` is omitted, opens the native folder picker — the standard
+   * "Add library" button flow. If `path` is provided, skips the picker
+   * and uses that path directly — used by drag-and-drop, where the user
+   * has already chosen visually.
+   *
+   * The main process validates the path is an existing directory; an
+   * invalid path resolves to `null` rather than throwing, so the
+   * renderer can show a soft "that wasn't a folder" notice without an
+   * exception boundary.
+   *
+   * Resolves to the new library, or null if the user cancelled the
+   * picker / provided an invalid path.
    */
-  add: () => Promise<Library | null>;
+  add: (path?: string) => Promise<Library | null>;
   /** Forget the library entirely. */
   remove: () => Promise<void>;
   /**

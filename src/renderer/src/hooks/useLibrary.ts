@@ -5,7 +5,12 @@ export interface UseLibraryResult {
   library: Library | null;
   loading: boolean;
   busy: boolean;
-  add: () => Promise<void>;
+  /**
+   * Add or replace the library. If `path` is provided (drag-and-drop path)
+   * the OS folder picker is skipped and that path is used directly.
+   * Resolves to true when a library was set, false on cancel / invalid path.
+   */
+  add: (path?: string) => Promise<boolean>;
   remove: () => Promise<void>;
   rescan: () => Promise<void>;
 }
@@ -34,11 +39,15 @@ export function useLibrary(): UseLibraryResult {
     };
   }, []);
 
-  const add = useCallback(async (): Promise<void> => {
+  const add = useCallback(async (path?: string): Promise<boolean> => {
     setBusy(true);
     try {
-      const lib = await window.api.library.add();
-      if (lib) setLibrary(lib);
+      const lib = await window.api.library.add(path);
+      if (lib) {
+        setLibrary(lib);
+        return true;
+      }
+      return false;
     } finally {
       setBusy(false);
     }

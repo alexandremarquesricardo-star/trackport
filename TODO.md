@@ -7,7 +7,7 @@
 
 ## Where we are
 
-**Status:** v0.1.0 — local Electron app, 20 commits on `main`, CI green, working end-to-end on Windows.
+**Status:** v0.1.0 — local Electron app, 21 commits on `main`, CI green, working end-to-end on Windows.
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -34,7 +34,8 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 16  | `1c8ff40`             | Per-strategy fit-drop preview — see what gets cut before applying a fit          |
 | 17  | `c479667`             | Modal a11y + keyboard shortcuts (Esc/Enter/focus trap) + global error boundary   |
 | 18  | `9147196`             | Vitest test infrastructure + first 21 tests on fit / sort, gated in CI           |
-| 19  | _next_                | Window state persistence — save bounds + maximized, validate against displays    |
+| 19  | `0726063`             | Window state persistence — save bounds + maximized, validate against displays    |
+| 20  | _next_                | Drag-and-drop a folder onto the window to set / replace the library              |
 
 ### What works today
 
@@ -60,6 +61,8 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 - Window state (size, position, maximized) persists across launches; saved
   bounds get validated against the current monitor layout so an unplugged
   display can't strand the window off-screen
+- Drag a music folder onto the window to set / replace the library; non-
+  folder drops are rejected with a soft inline note instead of a crash
 - CI typechecks, lints, format-checks, tests, and builds on every push to main / PR
 
 ---
