@@ -27,7 +27,7 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 9 | `500314d` + `afbb80c` | GitHub Actions CI |
 | 10 | `86bb92e` | Library import (persistent music root) |
 | 11 | `7d874fd` | Per-file copy-error recovery |
-| 12 | _next_ | App icon + window chrome polish (mark + multi-res ico/png + header tighten-up) |
+| 12 | `788bdc0` | App icon + window chrome polish (mark + multi-res ico/png + header tighten-up) |
 
 ### What works today
 
