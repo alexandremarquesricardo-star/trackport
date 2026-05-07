@@ -42,7 +42,7 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 24  | `03d112a`             | Windows distribution polish — LICENSE, publisher, NSIS license, signing-ready    |
 | 25  | `aba2813`             | Auto-update runtime — electron-updater, top banner with download / restart flow  |
 | 26  | `91b2306`             | Release CI — tag-triggered Windows installer build, draft GitHub Release upload  |
-| 27  | _next_                | macOS release CI — parallel macos-latest job, signing + notarization-ready       |
+| 27  | `e5cd26a`             | macOS release CI — parallel macos-latest job, signing + notarization-ready       |
 
 ### What works today
 
@@ -118,8 +118,58 @@ Roughly 3-4 iterations:
 - Re-encode FLAC/WAV → MP3 at sync time (needs ffmpeg sidecar, license-aware)
 - Manual track exclusion in preflight (uncheck individual files)
 - Mobile companion (React Native or PWA) for "plan on phone, execute on desktop" hand-off
-- Auto-update channel (electron-updater + GitHub Releases — pairs naturally with code signing)
 - Device-side cleanup ("delete tracks no longer in library")
+
+---
+
+## Release setup (when ready to sign / notarize)
+
+The release workflow is fully wired and ships unsigned binaries today. To remove the SmartScreen warning on Windows and the Gatekeeper warning on macOS, configure the GitHub Actions secrets below. Each is independent — partial setup just means the corresponding signing step no-ops.
+
+### What to obtain first
+
+| Secret                        | What it is                                                                                                                        | Cost / time                                                       |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `WIN_CSC_LINK`                | Authenticode `.pfx` from a Microsoft-trusted CA (DigiCert, Sectigo, SSL.com)                                                      | ~$200–500/yr; CA provisioning takes 1–7 days                      |
+| `WIN_CSC_KEY_PASSWORD`        | Password for the `.pfx`                                                                                                           | —                                                                 |
+| `MAC_CSC_LINK`                | Apple Developer ID Application cert (created at developer.apple.com → Certificates, then exported from Keychain Access as `.p12`) | $99/yr Apple Developer Program; cert itself is free once enrolled |
+| `MAC_CSC_KEY_PASSWORD`        | Password for the `.p12`                                                                                                           | —                                                                 |
+| `APPLE_ID`                    | Developer-program-enrolled Apple ID email                                                                                         | Free                                                              |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password generated at appleid.apple.com → Sign-In and Security → App-Specific Passwords                              | Free, 1 minute                                                    |
+| `APPLE_TEAM_ID`               | 10-char team ID at developer.apple.com/account → Membership                                                                       | Free, visible immediately after enrollment                        |
+
+### CLI commands (PowerShell, run from repo root)
+
+Requires `gh` authenticated (`gh auth login` once). `gh secret set <NAME>` with no `--body` opens a hidden prompt — paste the value. Values never hit disk and never appear in shell history.
+
+```powershell
+# Text secrets (passwords and IDs) — prompts hide the input
+gh secret set WIN_CSC_KEY_PASSWORD
+gh secret set MAC_CSC_KEY_PASSWORD
+gh secret set APPLE_ID
+gh secret set APPLE_APP_SPECIFIC_PASSWORD
+gh secret set APPLE_TEAM_ID
+
+# Binary cert secrets — base64-encode the cert files first
+$pfx = [Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\path\to\trackport.pfx"))
+$pfx | gh secret set WIN_CSC_LINK
+
+$p12 = [Convert]::ToBase64String([IO.File]::ReadAllBytes("C:\path\to\trackport.p12"))
+$p12 | gh secret set MAC_CSC_LINK
+
+# Verify
+gh secret list
+```
+
+### Incremental rollout strategy
+
+You don't have to configure everything at once. Three useful states, each strictly better than the last for end-user experience:
+
+1. **Nothing configured** — both jobs build unsigned. Releases work, auto-update works, users see SmartScreen / Gatekeeper warnings on first install.
+2. **Apple secrets only** ($99/yr) — macOS DMG signs + notarizes; no Gatekeeper warning. Windows still triggers SmartScreen.
+3. **Everything configured** ($299–599/yr) — both platforms ship clean.
+
+The cheapest first move that makes a real user-visible difference is the $99 Apple fee + the four Apple secrets. Authenticode certs are 5–10× the cost for a similar outcome — defer until Windows distribution scale justifies it.
 
 ---
 
