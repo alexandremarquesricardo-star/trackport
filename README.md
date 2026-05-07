@@ -27,7 +27,7 @@ TrackPort is the first app to treat the **transfer event** as a first-class prod
 ## Stack
 
 - **Desktop:** Electron + React + TypeScript + Vite (electron-vite)
-- **Tests:** Vitest (45 tests covering the smart-fit logic, natural-sort, window-bounds validator, and the incremental library scanner)
+- **Tests:** Vitest (53 tests covering the smart-fit logic, natural-sort, window-bounds validator, the incremental library scanner, and the auto-update state reducer)
 - **CI/CD:** GitHub Actions (lint + format-check + tests + typecheck + build on every push); GitHub Releases for desktop binaries
 - **Backend (planned):** Node.js + Hono on Railway (Spotify metadata matcher only)
 - **Mobile (future):** Android via React Native — iOS is largely blocked by Apple's USB MSC restrictions
@@ -72,8 +72,22 @@ Never commit certificates or passwords. Release CI loads them from encrypted sec
 
 1. Bump `version` in `package.json` and commit on `main`.
 2. Tag and push: `git tag v0.X.Y && git push origin v0.X.Y`.
-3. The [`Release`](.github/workflows/release.yml) workflow runs on tag push: lints, format-checks, tests, type-checks, and builds the Windows NSIS installer, then uploads the installer + `latest.yml` + `.blockmap` (used by electron-updater) to a **draft** GitHub Release for that tag.
-4. Smoke-test the installer locally, then promote the draft Release to published from the GitHub UI. Already-installed copies of the app pick up the new version on their next launch via the auto-updater.
+3. The [`Release`](.github/workflows/release.yml) workflow runs on tag push: parallel `windows` (windows-latest runner, NSIS installer + `latest.yml` + `.blockmap`) and `macos` (macos-latest runner, universal arm64+x64 DMG + `latest-mac.yml` + `.blockmap`) jobs. Each runs the full lint + format-check + test + typecheck gate before building. Both upload artifacts to the same **draft** GitHub Release for the tag.
+4. Smoke-test the installer / DMG on each platform, then promote the draft Release to published from the GitHub UI. Already-installed copies of the app pick up the new version on their next launch via the auto-updater (~5 s after launch).
+
+#### Repo secrets to configure
+
+These are all optional — without them, the corresponding signing/notarization steps no-op and the binary ships unsigned (Gatekeeper / SmartScreen warnings on first install, but the app runs fine).
+
+| Secret                        | Purpose                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------ |
+| `WIN_CSC_LINK`                | Base64 of `.pfx` (or URL) — Windows Authenticode signing                 |
+| `WIN_CSC_KEY_PASSWORD`        | Password for the `.pfx`                                                  |
+| `MAC_CSC_LINK`                | Base64 of `.p12` (or URL) — Apple Developer ID signing                   |
+| `MAC_CSC_KEY_PASSWORD`        | Password for the `.p12`                                                  |
+| `APPLE_ID`                    | Apple ID email — required for notarization                               |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App-specific password from appleid.apple.com — required for notarization |
+| `APPLE_TEAM_ID`               | Apple Developer team ID — required for notarization                      |
 
 ## Project structure
 

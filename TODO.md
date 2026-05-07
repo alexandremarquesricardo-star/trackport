@@ -7,7 +7,7 @@
 
 ## Where we are
 
-**Status:** v0.1.0 — local Electron app, 27 commits on `main`, CI green, **Windows distribution complete**, working end-to-end on Windows.
+**Status:** v0.1.0 — local Electron app, 28 commits on `main`, CI green, **Windows + macOS distribution complete**, working end-to-end on Windows.
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -41,7 +41,8 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 23  | `5cb1868`             | Clickable paths — library root + device mount open in OS file manager            |
 | 24  | `03d112a`             | Windows distribution polish — LICENSE, publisher, NSIS license, signing-ready    |
 | 25  | `aba2813`             | Auto-update runtime — electron-updater, top banner with download / restart flow  |
-| 26  | _next_                | Release CI — tag-triggered Windows installer build, draft GitHub Release upload  |
+| 26  | `91b2306`             | Release CI — tag-triggered Windows installer build, draft GitHub Release upload  |
+| 27  | _next_                | macOS release CI — parallel macos-latest job, signing + notarization-ready       |
 
 ### What works today
 
@@ -79,34 +80,17 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 - Auto-update via electron-updater: checks GitHub Releases on launch
   (after a 5s delay), surfaces a top banner with Download / Restart-now
   flow; pure-state-machine reducer is unit-tested
-- Tag-triggered release CI builds the Windows installer + auto-update
-  sidecars and uploads to a draft GitHub Release; signing-ready when a
-  cert is added to repo secrets
+- Tag-triggered release CI builds parallel Windows NSIS installer +
+  macOS universal DMG (arm64+x64), each with auto-update sidecars,
+  uploaded to a draft GitHub Release; signing + Apple notarization
+  engage automatically when the relevant secrets are configured
 - CI typechecks, lints, format-checks, tests, and builds on every push to main / PR
 
 ---
 
 ## Next up (in order of leverage)
 
-### 1. macOS distribution finish
-
-Mirror what just landed for Windows so the Mac side is also production-shippable:
-
-- Add macOS to `release.yml` (the workflow already runs on tag push; just
-  add a `macos:` job that uses `--mac --publish always`).
-- Wire `CSC_LINK` / `CSC_KEY_PASSWORD` + `APPLE_ID` /
-  `APPLE_APP_SPECIFIC_PASSWORD` / `APPLE_TEAM_ID` env vars from secrets
-  for signing + notarization. Without them, the DMG still builds
-  unsigned (Gatekeeper warning on first open).
-- Build a universal DMG (arm64 + x64) per the existing
-  electron-builder.yml config.
-- Smoke-test on a real Mac before promoting the draft release.
-
-The hardenedRuntime + gatekeeperAssess: false flags are already wired
-in electron-builder.yml from iteration #24, so notarization will Just
-Work once the Apple credentials are in place.
-
-### 2. Spotify metadata-only matcher (multi-iteration arc)
+### 1. Spotify metadata-only matcher (multi-iteration arc)
 
 The remaining big wedge feature. Will need:
 
