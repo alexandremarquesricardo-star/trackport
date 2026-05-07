@@ -12,6 +12,16 @@ const detector = new DeviceDetector();
 const preferences = new PreferencesStore();
 const library = new LibraryStore();
 
+// In dev the icon lives next to the source tree; in packaged builds it's
+// shipped via `extraResources` in electron-builder.yml. Linux relies on this
+// path at runtime since the AppImage doesn't bake the icon into the binary
+// the way the Windows .exe and macOS .app bundles do.
+function resolveIconPath(): string {
+  return app.isPackaged
+    ? join(process.resourcesPath, "icon.png")
+    : join(app.getAppPath(), "build", "icon.png");
+}
+
 function createWindow(): BrowserWindow {
   const mainWindow = new BrowserWindow({
     width: 1100,
@@ -21,6 +31,7 @@ function createWindow(): BrowserWindow {
     show: false,
     autoHideMenuBar: true,
     title: "TrackPort",
+    icon: resolveIconPath(),
     backgroundColor: "#0b0d12",
     webPreferences: {
       preload: join(__dirname, "../preload/index.js"),

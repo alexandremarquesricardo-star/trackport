@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "node scripts/electron-vite.cjs dev",
     "build": "npm run typecheck && electron-vite build",
+    "icons": "node scripts/build-icons.cjs",
     "start": "node scripts/electron-vite.cjs preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "rebuild": "electron-builder install-app-deps",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.4",
+    "@resvg/resvg-js": "2.6.2",
     "@types/node": "^22.10.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
@@ -28,6 +30,7 @@
     "electron": "^33.2.1",
     "electron-builder": "^25.1.8",
     "electron-vite": "^2.3.0",
+    "png-to-ico": "2.1.8",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "typescript": "^5.7.2",

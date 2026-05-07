@@ -3,6 +3,7 @@ import { useDevices } from "./hooks/useDevices";
 import { useDeviceProfile } from "./hooks/useDeviceProfile";
 import { useLibrary } from "./hooks/useLibrary";
 import { useSync } from "./hooks/useSync";
+import { BrandMark } from "./components/BrandMark";
 import { LibrarySection } from "./components/LibrarySection";
 import { SyncDialog } from "./components/SyncDialog";
 import type { Device } from "../../shared/devices";
@@ -17,7 +18,10 @@ export function App(): JSX.Element {
   return (
     <main className="app">
       <header className="app__header">
-        <div className="app__brand">TrackPort</div>
+        <div className="app__brand">
+          <BrandMark size={28} />
+          <span className="app__brand-text">TrackPort</span>
+        </div>
         <div className="app__version">v{window.api.appVersion}</div>
       </header>
 
