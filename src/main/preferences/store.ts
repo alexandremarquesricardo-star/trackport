@@ -1,6 +1,7 @@
 import { app } from "electron";
 import { promises as fs } from "node:fs";
 import { dirname, join } from "node:path";
+import { EMPTY_WINDOW_STATE, type Rect, type WindowState } from "../../shared/window";
 
 /**
  * Shape on disk. The file is intentionally tolerant of unknown keys (forward
@@ -9,9 +10,13 @@ import { dirname, join } from "node:path";
  */
 interface PreferencesShape {
   profilesByDeviceId: Record<string, string>;
+  window: WindowState;
 }
 
-const EMPTY: PreferencesShape = { profilesByDeviceId: {} };
+const EMPTY: PreferencesShape = {
+  profilesByDeviceId: {},
+  window: EMPTY_WINDOW_STATE,
+};
 const FILE_NAME = "preferences.json";
 const WRITE_DEBOUNCE_MS = 250;
 
@@ -25,7 +30,10 @@ const WRITE_DEBOUNCE_MS = 250;
  * is the only mutator and already updates its own state optimistically.
  */
 export class PreferencesStore {
-  private state: PreferencesShape = { profilesByDeviceId: {} };
+  private state: PreferencesShape = {
+    profilesByDeviceId: {},
+    window: { ...EMPTY_WINDOW_STATE },
+  };
   private loaded = false;
   private writeTimer: NodeJS.Timeout | null = null;
   private flushing: Promise<void> | null = null;
@@ -39,29 +47,13 @@ export class PreferencesStore {
     try {
       const raw = await fs.readFile(this.filePath, "utf-8");
       const parsed: unknown = JSON.parse(raw);
-      if (
-        parsed &&
-        typeof parsed === "object" &&
-        "profilesByDeviceId" in parsed &&
-        typeof (parsed as { profilesByDeviceId: unknown }).profilesByDeviceId === "object" &&
-        (parsed as { profilesByDeviceId: unknown }).profilesByDeviceId !== null
-      ) {
-        const candidate = (parsed as { profilesByDeviceId: Record<string, unknown> })
-          .profilesByDeviceId;
-        const sanitised: Record<string, string> = {};
-        for (const [k, v] of Object.entries(candidate)) {
-          if (typeof v === "string") sanitised[k] = v;
-        }
-        this.state = { profilesByDeviceId: sanitised };
-      } else {
-        this.state = { ...EMPTY };
-      }
+      this.state = sanitise(parsed);
     } catch (err: unknown) {
       const code = (err as NodeJS.ErrnoException | undefined)?.code;
       if (code !== "ENOENT") {
         console.warn("[PreferencesStore] failed to read", this.filePath, err);
       }
-      this.state = { ...EMPTY };
+      this.state = { ...EMPTY, window: { ...EMPTY_WINDOW_STATE } };
     }
     this.loaded = true;
   }
@@ -73,6 +65,23 @@ export class PreferencesStore {
   setDeviceProfile(deviceId: string, profileId: string): void {
     if (this.state.profilesByDeviceId[deviceId] === profileId) return;
     this.state.profilesByDeviceId[deviceId] = profileId;
+    this.scheduleWrite();
+  }
+
+  /** Last-known unmaximized bounds + maximized flag, or empty defaults. */
+  getWindowState(): WindowState {
+    return this.state.window;
+  }
+
+  /**
+   * Persist the current window state. Deduplicated against the in-memory
+   * value so a rapid sequence of `resize` / `move` events that don't
+   * actually change anything (e.g., post-snap) doesn't churn the
+   * debounced write.
+   */
+  setWindowState(next: WindowState): void {
+    if (sameWindowState(this.state.window, next)) return;
+    this.state.window = next;
     this.scheduleWrite();
   }
 
@@ -117,4 +126,61 @@ export class PreferencesStore {
       console.error("[PreferencesStore] write failed:", err);
     }
   }
+}
+
+function sanitise(input: unknown): PreferencesShape {
+  if (!input || typeof input !== "object") {
+    return { ...EMPTY, window: { ...EMPTY_WINDOW_STATE } };
+  }
+  const root = input as Record<string, unknown>;
+  return {
+    profilesByDeviceId: sanitiseProfileMap(root.profilesByDeviceId),
+    window: sanitiseWindowState(root.window),
+  };
+}
+
+function sanitiseProfileMap(input: unknown): Record<string, string> {
+  if (!input || typeof input !== "object") return {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(input)) {
+    if (typeof v === "string") out[k] = v;
+  }
+  return out;
+}
+
+function sanitiseWindowState(input: unknown): WindowState {
+  if (!input || typeof input !== "object") return { ...EMPTY_WINDOW_STATE };
+  const candidate = input as Record<string, unknown>;
+  return {
+    bounds: sanitiseRect(candidate.bounds),
+    isMaximized: candidate.isMaximized === true,
+  };
+}
+
+function sanitiseRect(input: unknown): Rect | null {
+  if (!input || typeof input !== "object") return null;
+  const r = input as Record<string, unknown>;
+  if (
+    typeof r.x !== "number" ||
+    typeof r.y !== "number" ||
+    typeof r.width !== "number" ||
+    typeof r.height !== "number"
+  ) {
+    return null;
+  }
+  if (!isFinite(r.x) || !isFinite(r.y) || !isFinite(r.width) || !isFinite(r.height)) {
+    return null;
+  }
+  return { x: r.x, y: r.y, width: r.width, height: r.height };
+}
+
+function sameWindowState(a: WindowState, b: WindowState): boolean {
+  if (a.isMaximized !== b.isMaximized) return false;
+  return sameRect(a.bounds, b.bounds);
+}
+
+function sameRect(a: Rect | null, b: Rect | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }

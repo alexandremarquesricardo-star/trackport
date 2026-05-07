@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell } from "electron";
+import { app, BrowserWindow, screen, shell } from "electron";
 import { join } from "node:path";
 import { DeviceDetector } from "./devices/detector";
 import { bindDeviceEventsToWindow, registerDeviceHandlers } from "./devices/ipc";
@@ -10,6 +10,7 @@ import { registerPreferencesHandlers } from "./preferences/ipc";
 import { scanAudioFiles } from "./sync/audio-scan";
 import { bindSyncEventsToWindow, registerSyncHandlers } from "./sync/ipc";
 import type { AudioFile } from "../shared/sync";
+import { bestFitForBounds, type Rect } from "../shared/window";
 
 const detector = new DeviceDetector();
 const preferences = new PreferencesStore();
@@ -48,10 +49,24 @@ function makeResolveTracks(library: LibraryStore) {
   };
 }
 
+/**
+ * Resolve the initial window bounds. Validated saved bounds win; falls
+ * back to the default 1100x720 centred-ish on the primary display so we
+ * avoid a one-frame "open at 1100x720, then snap to saved size" flash.
+ */
+function resolveInitialBounds(): Rect | null {
+  const saved = preferences.getWindowState().bounds;
+  const displays = screen.getAllDisplays().map((d) => d.workArea);
+  return bestFitForBounds(saved, displays);
+}
+
 function createWindow(): BrowserWindow {
+  const initial = resolveInitialBounds();
   const mainWindow = new BrowserWindow({
-    width: 1100,
-    height: 720,
+    width: initial?.width ?? 1100,
+    height: initial?.height ?? 720,
+    x: initial?.x,
+    y: initial?.y,
     minWidth: 880,
     minHeight: 560,
     show: false,
@@ -67,6 +82,10 @@ function createWindow(): BrowserWindow {
     },
   });
 
+  if (preferences.getWindowState().isMaximized) {
+    mainWindow.maximize();
+  }
+
   mainWindow.on("ready-to-show", () => {
     mainWindow.show();
   });
@@ -78,6 +97,7 @@ function createWindow(): BrowserWindow {
 
   bindDeviceEventsToWindow(mainWindow, detector);
   bindSyncEventsToWindow(mainWindow);
+  bindWindowStatePersistence(mainWindow);
 
   if (!app.isPackaged && process.env.ELECTRON_RENDERER_URL) {
     mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
@@ -87,6 +107,31 @@ function createWindow(): BrowserWindow {
   }
 
   return mainWindow;
+}
+
+/**
+ * Save window geometry on every meaningful change so the next launch
+ * lands the user where they were. The PreferencesStore already debounces
+ * writes (~250 ms), so the high-frequency `resize`/`move` events during
+ * a drag don't churn the disk.
+ *
+ * `getNormalBounds()` is deliberate: when the user is in maximized mode,
+ * we still want to remember the underlying restore-rect so un-maximizing
+ * after a relaunch lands on the right size, not on the default 1100x720.
+ */
+function bindWindowStatePersistence(window: BrowserWindow): void {
+  const save = (): void => {
+    if (window.isDestroyed()) return;
+    preferences.setWindowState({
+      bounds: window.getNormalBounds(),
+      isMaximized: window.isMaximized(),
+    });
+  };
+  window.on("resize", save);
+  window.on("move", save);
+  window.on("maximize", save);
+  window.on("unmaximize", save);
+  window.on("close", save);
 }
 
 app.whenReady().then(async () => {

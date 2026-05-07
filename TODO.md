@@ -7,7 +7,7 @@
 
 ## Where we are
 
-**Status:** v0.1.0 — local Electron app, 19 commits on `main`, CI green, working end-to-end on Windows.
+**Status:** v0.1.0 — local Electron app, 20 commits on `main`, CI green, working end-to-end on Windows.
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -33,7 +33,8 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 15  | `2625b94`             | "Clear device first" toggle — wipe phase before copy, default ON for Shokz       |
 | 16  | `1c8ff40`             | Per-strategy fit-drop preview — see what gets cut before applying a fit          |
 | 17  | `c479667`             | Modal a11y + keyboard shortcuts (Esc/Enter/focus trap) + global error boundary   |
-| 18  | _next_                | Vitest test infrastructure + first 21 tests on fit / sort, gated in CI           |
+| 18  | `9147196`             | Vitest test infrastructure + first 21 tests on fit / sort, gated in CI           |
+| 19  | _next_                | Window state persistence — save bounds + maximized, validate against displays    |
 
 ### What works today
 
@@ -54,7 +55,11 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
   initial primary focus, focus restored to trigger on close)
 - Top-level React error boundary recovers a renderer crash with a Reload action
   instead of a black window
-- Vitest unit tests covering the smart-fit logic and natural-sort behaviour
+- Vitest unit tests covering the smart-fit logic, natural-sort behaviour,
+  and window-bounds validation
+- Window state (size, position, maximized) persists across launches; saved
+  bounds get validated against the current monitor layout so an unplugged
+  display can't strand the window off-screen
 - CI typechecks, lints, format-checks, tests, and builds on every push to main / PR
 
 ---
