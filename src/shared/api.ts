@@ -5,9 +5,7 @@ import type { SyncApi } from "./sync";
 
 /**
  * Misc filesystem helpers needed by the renderer that don't fit cleanly
- * into the device / sync / library / preferences slices. Today this is
- * just path extraction for drag-and-drop; future utilities (reveal in
- * file manager, etc.) belong here too.
+ * into the device / sync / library / preferences slices.
  */
 export interface FilesApi {
   /**
@@ -15,6 +13,12 @@ export interface FilesApi {
    * <input type="file"> event. Backed by Electron's webUtils.
    */
   pathForFile: (file: File) => string;
+  /**
+   * Open the given path in the OS file manager (Explorer, Finder,
+   * Files, etc.). Resolves to true on success, false if the path is
+   * inaccessible or the OS shell rejects it.
+   */
+  openInFileManager: (path: string) => Promise<boolean>;
 }
 
 /**

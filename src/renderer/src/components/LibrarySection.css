@@ -42,13 +42,35 @@
 }
 
 .library__root {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 14px;
   font-weight: 600;
   color: #e6e8ee;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: block;
+  width: 100%;
+  border-radius: 4px;
+  transition: color 120ms ease;
+}
+
+.library__root:hover {
+  color: #c7d2fe;
+  text-decoration: underline;
+  text-decoration-color: rgba(199, 210, 254, 0.45);
+  text-underline-offset: 3px;
+}
+
+.library__root:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.6);
+  outline-offset: 2px;
 }
 
 .library__stats {

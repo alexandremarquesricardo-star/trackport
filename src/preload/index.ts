@@ -7,6 +7,7 @@ import type { SyncPlan, SyncPlanId, SyncProgress } from "../shared/sync";
 
 const DEVICES_LIST_CHANNEL = "devices:list";
 const DEVICES_CHANGED_CHANNEL = "devices:changed";
+const SHELL_OPEN_PATH = "shell:open-path";
 const SYNC_PICK_FOLDER = "sync:pick-folder";
 const SYNC_BUILD_PLAN = "sync:build-plan";
 const SYNC_APPLY_FIT = "sync:apply-fit";
@@ -68,6 +69,8 @@ const api: TrackPortApi = {
     // path from a File object in Electron 32+. The deprecated File.path
     // property may be removed entirely in future Electron majors.
     pathForFile: (file: File): string => webUtils.getPathForFile(file),
+    openInFileManager: (path: string) =>
+      ipcRenderer.invoke(SHELL_OPEN_PATH, path) as Promise<boolean>,
   },
 };
 

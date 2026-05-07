@@ -44,9 +44,16 @@ export function LibrarySection({
         ♪
       </div>
       <div className="library__info">
-        <div className="library__root" title={library.root}>
+        <button
+          type="button"
+          className="library__root"
+          title={`Open ${library.root} in file manager`}
+          onClick={() => {
+            void window.api.files.openInFileManager(library.root);
+          }}
+        >
           {library.root}
-        </div>
+        </button>
         <div className="library__stats">
           {library.trackCount.toLocaleString()} {library.trackCount === 1 ? "track" : "tracks"} ·{" "}
           {formatBytes(library.totalBytes)}

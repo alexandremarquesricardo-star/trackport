@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, screen, shell } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, screen, shell } from "electron";
 import { join } from "node:path";
 import { DeviceDetector } from "./devices/detector";
 import { bindDeviceEventsToWindow, registerDeviceHandlers } from "./devices/ipc";
@@ -111,6 +111,21 @@ function createWindow(): BrowserWindow {
 }
 
 /**
+ * Expose `shell.openPath` to the renderer for "reveal in file manager"
+ * affordances. The renderer is sandboxed away from Node, so even something
+ * this simple needs an IPC hop. shell.openPath returns an empty string on
+ * success and an error message on failure — we project that onto a clean
+ * boolean so the renderer doesn't have to interpret OS-specific text.
+ */
+function registerShellHandlers(): void {
+  ipcMain.handle("shell:open-path", async (_event, path: unknown): Promise<boolean> => {
+    if (typeof path !== "string" || path.length === 0) return false;
+    const err = await shell.openPath(path);
+    return err === "";
+  });
+}
+
+/**
  * Save window geometry on every meaningful change so the next launch
  * lands the user where they were. The PreferencesStore already debounces
  * writes (~250 ms), so the high-frequency `resize`/`move` events during
@@ -146,6 +161,7 @@ app.whenReady().then(async () => {
   registerPreferencesHandlers(preferences);
   registerLibraryHandlers(library);
   registerSyncHandlers({ resolveTracks: makeResolveTracks(library) });
+  registerShellHandlers();
   detector.on("error", (err) => {
     console.error("[DeviceDetector] poll error:", err);
   });

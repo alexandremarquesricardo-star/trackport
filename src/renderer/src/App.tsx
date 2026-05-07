@@ -146,7 +146,16 @@ function DeviceCard({
         <div className="app__device-label">{device.label}</div>
         <div className="app__device-meta">
           {formatBytes(device.sizeBytes)} <span className="app__device-meta-sep">·</span>{" "}
-          <span className="app__device-mount">{device.mountPath}</span>
+          <button
+            type="button"
+            className="app__device-mount"
+            title={`Open ${device.mountPath} in file manager`}
+            onClick={() => {
+              void window.api.files.openInFileManager(device.mountPath);
+            }}
+          >
+            {device.mountPath}
+          </button>
         </div>
         <label className="app__device-profile">
           <span className="app__device-profile-label">Profile</span>

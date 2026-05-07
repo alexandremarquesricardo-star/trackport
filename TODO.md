@@ -7,7 +7,7 @@
 
 ## Where we are
 
-**Status:** v0.1.0 — local Electron app, 23 commits on `main`, CI green, working end-to-end on Windows.
+**Status:** v0.1.0 — local Electron app, 24 commits on `main`, CI green, working end-to-end on Windows.
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -37,7 +37,8 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 19  | `0726063`             | Window state persistence — save bounds + maximized, validate against displays    |
 | 20  | `b76a59e`             | Drag-and-drop a folder onto the window to set / replace the library              |
 | 21  | `75235b3`             | Scanner test suite — 15 tests with temp-dir fixtures, cache-hit identity check   |
-| 22  | _next_                | Native app menu — proper Mac app menu, About panel, no more "Electron"           |
+| 22  | `61872e3`             | Native app menu — proper Mac app menu, About panel, no more "Electron"           |
+| 23  | _next_                | Clickable paths — library root + device mount open in OS file manager            |
 
 ### What works today
 
@@ -69,6 +70,8 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 - Native menu bar with proper "TrackPort" app menu on macOS (About / Hide /
   Quit), standard Edit/View/Window items, About panel populated; menu stays
   auto-hidden on Win/Linux to keep the focused-tool aesthetic
+- Library root and device mount paths are clickable — opens the folder in
+  Explorer / Finder / Files for quick spelunking
 - CI typechecks, lints, format-checks, tests, and builds on every push to main / PR
 
 ---
