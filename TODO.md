@@ -7,7 +7,7 @@
 
 ## Where we are
 
-**Status:** v0.1.0 — local Electron app, 15 commits on `main`, CI green, working end-to-end on Windows.
+**Status:** v0.1.0 — local Electron app, 16 commits on `main`, CI green, working end-to-end on Windows.
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -29,7 +29,8 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 11  | `7d874fd`             | Per-file copy-error recovery                                                     |
 | 12  | `788bdc0`             | App icon + window chrome polish (mark + multi-res ico/png + header tighten-up)   |
 | 13  | `cfb28b2`             | Cached library index — mtime-based incremental scan, planner reads cached tracks |
-| 14  | _next_                | ESLint + Prettier in CI (flat config, format check, lint gate)                   |
+| 14  | `1972cc2`             | ESLint + Prettier in CI (flat config, format check, lint gate)                   |
+| 15  | _next_                | "Clear device first" toggle — wipe phase before copy, default ON for Shokz       |
 
 ### What works today
 
@@ -43,6 +44,8 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 - Continues past per-file copy errors, surfaces them in the done state
 - Caches the library track index (paths + sizes + mtimes) and reuses it on
   every sync — only re-stats files in directories whose mtime moved
+- "Clear device first" toggle in preflight, default ON for transmission-time
+  devices so leftover files don't break order preservation
 - CI typechecks, lints, format-checks, and builds on every push to main / PR
 
 ---
@@ -74,7 +77,6 @@ Roughly 3-4 iterations:
 - Multi-root libraries (`~/Music` + external drive)
 - Drag-to-reorder in preflight (manual override of natural sort)
 - Sort by ID3 track number / album metadata
-- "Wipe device first for guaranteed order" toggle
 - Re-encode FLAC/WAV → MP3 at sync time (needs ffmpeg sidecar, license-aware)
 - Manual track exclusion in preflight (uncheck individual files)
 - Mobile companion (React Native or PWA) for "plan on phone, execute on desktop" hand-off

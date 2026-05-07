@@ -83,6 +83,7 @@ export function App(): JSX.Element {
         onCancel={sync.cancel}
         onClose={sync.close}
         onApplyFit={sync.applyFit}
+        onSetWipeDevice={sync.setWipeDevice}
       />
     </main>
   );

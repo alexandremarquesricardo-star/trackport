@@ -37,8 +37,8 @@ const api: TrackPortApi = {
     buildPlan: (input) => ipcRenderer.invoke(SYNC_BUILD_PLAN, input) as Promise<SyncPlan>,
     applyFit: (planId: SyncPlanId, strategy: FitStrategyId) =>
       ipcRenderer.invoke(SYNC_APPLY_FIT, planId, strategy) as Promise<SyncPlan>,
-    executePlan: (planId: SyncPlanId) =>
-      ipcRenderer.invoke(SYNC_EXECUTE_PLAN, planId) as Promise<void>,
+    executePlan: (planId: SyncPlanId, opts) =>
+      ipcRenderer.invoke(SYNC_EXECUTE_PLAN, planId, opts ?? {}) as Promise<void>,
     cancelPlan: (planId: SyncPlanId) =>
       ipcRenderer.invoke(SYNC_CANCEL_PLAN, planId) as Promise<void>,
     onProgress: (cb) => {

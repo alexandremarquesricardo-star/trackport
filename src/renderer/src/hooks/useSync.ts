@@ -6,8 +6,14 @@ import type { SyncFailure, SyncPlan, SyncProgress } from "../../../shared/sync";
 export type SyncState =
   | { phase: "idle" }
   | { phase: "picking"; device: Device }
-  | { phase: "preflight"; device: Device; plan: SyncPlan }
-  | { phase: "copying"; device: Device; plan: SyncPlan; progress: SyncProgress }
+  | { phase: "preflight"; device: Device; plan: SyncPlan; wipeDevice: boolean }
+  | {
+      phase: "copying";
+      device: Device;
+      plan: SyncPlan;
+      wipeDevice: boolean;
+      progress: SyncProgress;
+    }
   | {
       phase: "done";
       device: Device;
@@ -17,6 +23,7 @@ export type SyncState =
       failedCount: number;
       failures: SyncFailure[];
       bytesOnDevice: number;
+      wipedCount: number;
       durationMs: number;
     }
   | { phase: "error"; device: Device | null; message: string };
@@ -30,6 +37,8 @@ export interface UseSyncResult {
    */
   start: (device: Device, profileId: string, initialFolder?: string) => Promise<void>;
   applyFit: (strategy: FitStrategyId) => Promise<void>;
+  /** Toggle the "Clear device first" preflight option. No-op outside preflight. */
+  setWipeDevice: (wipe: boolean) => void;
   confirm: () => Promise<void>;
   cancel: () => Promise<void>;
   close: () => void;
@@ -49,8 +58,13 @@ export function useSync(): UseSyncResult {
         if (prev.phase !== "preflight" && prev.phase !== "copying") return prev;
         const device = prev.device;
         const plan = prev.plan;
-        if (progress.state === "preparing" || progress.state === "copying") {
-          return { phase: "copying", device, plan, progress };
+        const wipeDevice = prev.wipeDevice;
+        if (
+          progress.state === "preparing" ||
+          progress.state === "wiping" ||
+          progress.state === "copying"
+        ) {
+          return { phase: "copying", device, plan, wipeDevice, progress };
         }
         if (progress.state === "done") {
           return {
@@ -62,6 +76,7 @@ export function useSync(): UseSyncResult {
             failedCount: progress.failedCount,
             failures: progress.failures,
             bytesOnDevice: progress.bytesOnDevice,
+            wipedCount: progress.wipedCount,
             durationMs: progress.durationMs,
           };
         }
@@ -84,7 +99,11 @@ export function useSync(): UseSyncResult {
           deviceMountPath: device.mountPath,
           profileId,
         });
-        setState({ phase: "preflight", device, plan });
+        // Default the wipe toggle ON for transmission-time-order devices
+        // (Shokz, FINIS): leftover files from a previous sync break the
+        // wedge feature on those devices. Other profiles default OFF —
+        // we never destroy data unprompted.
+        setState({ phase: "preflight", device, plan, wipeDevice: plan.preserveOrder });
       } catch (err) {
         setState({
           phase: "error",
@@ -101,7 +120,12 @@ export function useSync(): UseSyncResult {
     if (current.phase !== "preflight") return;
     try {
       const next = await window.api.sync.applyFit(current.plan.id, strategy);
-      setState({ phase: "preflight", device: current.device, plan: next });
+      setState({
+        phase: "preflight",
+        device: current.device,
+        plan: next,
+        wipeDevice: current.wipeDevice,
+      });
     } catch (err) {
       setState({
         phase: "error",
@@ -111,18 +135,23 @@ export function useSync(): UseSyncResult {
     }
   }, []);
 
+  const setWipeDevice = useCallback((wipe: boolean): void => {
+    setState((prev) => (prev.phase === "preflight" ? { ...prev, wipeDevice: wipe } : prev));
+  }, []);
+
   const confirm = useCallback(async (): Promise<void> => {
     const current = stateRef.current;
     if (current.phase !== "preflight") return;
-    const { plan, device } = current;
+    const { plan, device, wipeDevice } = current;
     setState({
       phase: "copying",
       device,
       plan,
+      wipeDevice,
       progress: { state: "preparing" },
     });
     try {
-      await window.api.sync.executePlan(plan.id);
+      await window.api.sync.executePlan(plan.id, { wipeDevice });
     } catch (err) {
       setState({
         phase: "error",
@@ -142,5 +171,5 @@ export function useSync(): UseSyncResult {
 
   const isBusy = state.phase !== "idle";
 
-  return { state, start, applyFit, confirm, cancel, close, isBusy };
+  return { state, start, applyFit, setWipeDevice, confirm, cancel, close, isBusy };
 }

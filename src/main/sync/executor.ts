@@ -1,11 +1,26 @@
 import { EventEmitter } from "node:events";
-import { copyFile, open, stat } from "node:fs/promises";
+import { copyFile, open, stat, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { getProfile } from "../../shared/profiles";
 import type { SyncFailure, SyncPlan, SyncPlanId, SyncProgress } from "../../shared/sync";
+import { scanAudioFiles } from "./audio-scan";
 
 const DEFAULT_TRANSMISSION_DELAY_MS = 150;
+
+export interface ExecuteOptions {
+  /**
+   * Delete every audio file currently on the target device before copying
+   * the planned tracks. Recommended for transmission-time order devices
+   * (Shokz, FINIS) — without it, leftover files from a previous sync
+   * interleave with the new playlist's playback order.
+   *
+   * The wipe re-walks the device at execute time (not from a stale plan
+   * snapshot) so any files added or moved between preflight and Confirm
+   * are still cleared.
+   */
+  wipeDevice?: boolean;
+}
 
 /**
  * Errors that abort the whole sync immediately. Continuing past these is
@@ -56,7 +71,7 @@ export class SyncExecutor extends EventEmitter {
     this.cancelled.add(planId);
   }
 
-  async execute(plan: SyncPlan): Promise<void> {
+  async execute(plan: SyncPlan, options: ExecuteOptions = {}): Promise<void> {
     const start = Date.now();
     this.emitProgress({ state: "preparing" });
 
@@ -68,7 +83,17 @@ export class SyncExecutor extends EventEmitter {
     let bytesOnDevice = 0;
     let copiedCount = 0;
     let skippedCount = 0;
+    let wipedCount = 0;
     const failures: SyncFailure[] = [];
+
+    if (options.wipeDevice) {
+      const wipeOutcome = await this.wipe(plan, failures);
+      if (wipeOutcome === "cancelled") {
+        this.emitProgress({ state: "error", message: "Sync cancelled", copiedCount: 0 });
+        return;
+      }
+      wipedCount = wipeOutcome.wipedCount;
+    }
 
     for (let i = 0; i < plan.files.length; i++) {
       if (this.cancelled.has(plan.id)) {
@@ -130,8 +155,55 @@ export class SyncExecutor extends EventEmitter {
       failedCount: failures.length,
       failures,
       bytesOnDevice,
+      wipedCount,
       durationMs: Date.now() - start,
     });
+  }
+
+  /**
+   * Pre-copy wipe phase. Re-walks the device for audio files (so any files
+   * added between preflight and confirm are still cleared) and deletes them
+   * one at a time. Per-file delete failures get pushed into the same
+   * `failures` list the copy phase uses — they're cosmetic noise (the file
+   * is still on the device), not fatal. Cancellation is honoured between
+   * files like the copy loop.
+   *
+   * Returns `"cancelled"` if the user cancelled mid-wipe, otherwise the
+   * count of files actually deleted (skipping ENOENT — already gone).
+   */
+  private async wipe(
+    plan: SyncPlan,
+    failures: SyncFailure[],
+  ): Promise<"cancelled" | { wipedCount: number }> {
+    const existing = await scanAudioFiles(plan.deviceMountPath);
+    if (existing.length === 0) return { wipedCount: 0 };
+
+    let wipedCount = 0;
+    for (let i = 0; i < existing.length; i++) {
+      if (this.cancelled.has(plan.id)) {
+        this.cancelled.delete(plan.id);
+        return "cancelled";
+      }
+      const file = existing[i];
+      this.emitProgress({
+        state: "wiping",
+        currentIndex: i,
+        currentFile: file.name,
+        totalFiles: existing.length,
+      });
+      try {
+        await unlink(file.path);
+        wipedCount++;
+      } catch (err) {
+        const code = (err as NodeJS.ErrnoException | undefined)?.code;
+        if (code === "ENOENT") continue; // raced with another delete — fine
+        failures.push({
+          file: file.name,
+          message: `Couldn't clear: ${shortMessage(err)}`,
+        });
+      }
+    }
+    return { wipedCount };
   }
 
   private emitProgress(progress: SyncProgress): void {

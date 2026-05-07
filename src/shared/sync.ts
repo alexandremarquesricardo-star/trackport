@@ -71,6 +71,16 @@ export interface SyncPlan {
   totalSizeBytes: number;
   freeSpaceBytes: number;
   fits: boolean;
+  /**
+   * Count of audio files currently sitting on the target device, scanned
+   * at plan-build time. Used by the preflight UI to surface "clearing
+   * this device will remove N files" — purely informational. The
+   * executor re-walks the device when wiping so it always works against
+   * fresh data.
+   */
+  existingDeviceFileCount: number;
+  /** Total bytes of those existing audio files. */
+  existingDeviceBytes: number;
 }
 
 /**
@@ -88,6 +98,15 @@ export interface SyncFailure {
 export type SyncProgress =
   | { state: "preparing" }
   | {
+      state: "wiping";
+      /** 0-based index of the file currently being deleted from the device. */
+      currentIndex: number;
+      /** Filename being deleted (basename only). */
+      currentFile: string;
+      /** Total files the wipe will visit. */
+      totalFiles: number;
+    }
+  | {
       state: "copying";
       currentIndex: number;
       currentFile: string;
@@ -104,6 +123,8 @@ export type SyncProgress =
       failures: SyncFailure[];
       /** Bytes that actually ended up on the device (copied + already-there). */
       bytesOnDevice: number;
+      /** Files removed during the optional pre-copy wipe phase (0 when wipe was off). */
+      wipedCount: number;
       durationMs: number;
     }
   | { state: "error"; message: string; copiedCount: number };
@@ -123,8 +144,15 @@ export interface SyncApi {
    * Returns the updated plan (same id) for the renderer to swap in.
    */
   applyFit: (planId: SyncPlanId, strategy: FitStrategyId) => Promise<SyncPlan>;
-  /** Execute a previously built plan. Resolves when the executor finishes (or errors). */
-  executePlan: (planId: SyncPlanId) => Promise<void>;
+  /**
+   * Execute a previously built plan.
+   *
+   * `wipeDevice` (default off) clears every audio file currently on the
+   * target device before the copy starts. Recommended for transmission-time
+   * order devices (Shokz, FINIS) where leftover files from a previous sync
+   * would interleave with the new playlist's playback order.
+   */
+  executePlan: (planId: SyncPlanId, opts?: { wipeDevice?: boolean }) => Promise<void>;
   /** Request cancellation. Effective between files; the in-flight file finishes. */
   cancelPlan: (planId: SyncPlanId) => Promise<void>;
   /** Subscribe to progress events. Returns an unsubscribe function. */

@@ -58,7 +58,14 @@ export async function buildPlan(
   supportedFiles.sort((a, b) => compareNatural(a.path, b.path));
 
   const totalSizeBytes = supportedFiles.reduce((acc, f) => acc + f.sizeBytes, 0);
-  const freeSpaceBytes = await getFreeBytes(input.deviceMountPath);
+  const [freeSpaceBytes, existingDeviceFiles] = await Promise.all([
+    getFreeBytes(input.deviceMountPath),
+    // Cheap parallel walk — same scanner the source uses, pointed at the
+    // device. We surface the count + size in the preflight UI so the user
+    // sees the impact of the "Clear device first" toggle before flipping it.
+    scanAudioFiles(input.deviceMountPath),
+  ]);
+  const existingDeviceBytes = existingDeviceFiles.reduce((acc, f) => acc + f.sizeBytes, 0);
 
   return {
     id: randomUUID(),
@@ -75,6 +82,8 @@ export async function buildPlan(
     totalSizeBytes,
     freeSpaceBytes,
     fits: totalSizeBytes <= freeSpaceBytes,
+    existingDeviceFileCount: existingDeviceFiles.length,
+    existingDeviceBytes,
   };
 }
 

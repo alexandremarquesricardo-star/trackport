@@ -8,6 +8,7 @@ interface Props {
   onCancel: () => void;
   onClose: () => void;
   onApplyFit: (strategy: FitStrategyId) => void;
+  onSetWipeDevice: (wipe: boolean) => void;
 }
 
 export function SyncDialog({
@@ -16,6 +17,7 @@ export function SyncDialog({
   onCancel,
   onClose,
   onApplyFit,
+  onSetWipeDevice,
 }: Props): JSX.Element | null {
   if (state.phase === "idle" || state.phase === "picking") return null;
 
@@ -35,6 +37,7 @@ export function SyncDialog({
             onConfirm={onConfirm}
             onClose={onClose}
             onApplyFit={onApplyFit}
+            onSetWipeDevice={onSetWipeDevice}
           />
         )}
         {state.phase === "copying" && <CopyingView state={state} onCancel={onCancel} />}
@@ -50,13 +53,15 @@ function PreflightView({
   onConfirm,
   onClose,
   onApplyFit,
+  onSetWipeDevice,
 }: {
   state: Extract<SyncState, { phase: "preflight" }>;
   onConfirm: () => void;
   onClose: () => void;
   onApplyFit: (strategy: FitStrategyId) => void;
+  onSetWipeDevice: (wipe: boolean) => void;
 }): JSX.Element {
-  const { plan, device } = state;
+  const { plan, device, wipeDevice } = state;
   const overshoot = plan.totalSizeBytes - plan.freeSpaceBytes;
   const skippedSize = plan.unsupportedFiles.reduce((acc, f) => acc + f.sizeBytes, 0);
   const fitSuggestions = !plan.fits
@@ -156,6 +161,14 @@ function PreflightView({
         </div>
       )}
 
+      <WipeToggle
+        wipeDevice={wipeDevice}
+        recommended={plan.preserveOrder}
+        existingCount={plan.existingDeviceFileCount}
+        existingBytes={plan.existingDeviceBytes}
+        onChange={onSetWipeDevice}
+      />
+
       <div className="sync-dialog__actions">
         <button
           className="sync-dialog__btn sync-dialog__btn--ghost"
@@ -170,10 +183,75 @@ function PreflightView({
           onClick={onConfirm}
           disabled={!plan.fits || plan.files.length === 0}
         >
-          Copy {plan.files.length > 0 ? plan.files.length.toLocaleString() : ""} files
+          {confirmLabel(plan.files.length, wipeDevice, plan.existingDeviceFileCount)}
         </button>
       </div>
     </>
+  );
+}
+
+function confirmLabel(fileCount: number, wipe: boolean, existingCount: number): string {
+  const copyPart = `Copy ${fileCount > 0 ? fileCount.toLocaleString() : ""} files`.trim();
+  if (!wipe || existingCount === 0) return copyPart;
+  return `Clear device & ${copyPart.toLowerCase()}`;
+}
+
+function WipeToggle({
+  wipeDevice,
+  recommended,
+  existingCount,
+  existingBytes,
+  onChange,
+}: {
+  wipeDevice: boolean;
+  recommended: boolean;
+  existingCount: number;
+  existingBytes: number;
+  onChange: (wipe: boolean) => void;
+}): JSX.Element {
+  // Even when nothing is on the device, we still render the control —
+  // hiding it would erase the user's mental model of "this option exists."
+  // Just dim and clarify.
+  const empty = existingCount === 0;
+  return (
+    <label
+      className={
+        "sync-dialog__wipe" +
+        (recommended ? " sync-dialog__wipe--recommended" : "") +
+        (empty ? " sync-dialog__wipe--empty" : "")
+      }
+    >
+      <input
+        type="checkbox"
+        className="sync-dialog__wipe-check"
+        checked={wipeDevice}
+        onChange={(e) => onChange(e.target.checked)}
+      />
+      <span className="sync-dialog__wipe-text">
+        <span className="sync-dialog__wipe-title">
+          Clear device first
+          {recommended && <span className="sync-dialog__wipe-badge">Recommended</span>}
+        </span>
+        <span className="sync-dialog__wipe-desc">
+          {empty ? (
+            <>No audio files currently on this device — toggle is a no-op.</>
+          ) : (
+            <>
+              Removes the {existingCount.toLocaleString()} audio file
+              {existingCount === 1 ? "" : "s"} ({formatBytes(existingBytes)}) currently on the
+              device before copying.
+              {recommended && (
+                <>
+                  {" "}
+                  On <strong>transmission-time-order</strong> devices, leftovers interleave with the
+                  new playlist.
+                </>
+              )}
+            </>
+          )}
+        </span>
+      </span>
+    </label>
   );
 }
 
@@ -228,26 +306,37 @@ function CopyingView({
   onCancel: () => void;
 }): JSX.Element {
   const { progress, plan } = state;
-  const ratio =
-    progress.state === "copying" && progress.totalBytes > 0
-      ? progress.bytesCopied / progress.totalBytes
-      : 0;
+  const wiping = progress.state === "wiping";
+  const ratio = (() => {
+    if (progress.state === "copying" && progress.totalBytes > 0) {
+      return progress.bytesCopied / progress.totalBytes;
+    }
+    if (progress.state === "wiping" && progress.totalFiles > 0) {
+      return progress.currentIndex / progress.totalFiles;
+    }
+    return 0;
+  })();
   const percent = Math.round(ratio * 100);
 
   return (
     <>
-      <h2 className="sync-dialog__title">Syncing…</h2>
-      {progress.state === "copying" ? (
+      <h2 className="sync-dialog__title">{wiping ? "Clearing device…" : "Syncing…"}</h2>
+      {progress.state === "copying" && (
         <p className="sync-dialog__sub">
           {progress.currentIndex + 1} of {progress.totalFiles} ·{" "}
           <span className="sync-dialog__filename">{progress.currentFile}</span>
         </p>
-      ) : (
-        <p className="sync-dialog__sub">Preparing…</p>
       )}
+      {progress.state === "wiping" && (
+        <p className="sync-dialog__sub">
+          Removing {progress.currentIndex + 1} of {progress.totalFiles} ·{" "}
+          <span className="sync-dialog__filename">{progress.currentFile}</span>
+        </p>
+      )}
+      {progress.state === "preparing" && <p className="sync-dialog__sub">Preparing…</p>}
 
       <div
-        className="sync-dialog__progress"
+        className={"sync-dialog__progress" + (wiping ? " sync-dialog__progress--wiping" : "")}
         role="progressbar"
         aria-valuenow={percent}
         aria-valuemin={0}
@@ -256,9 +345,11 @@ function CopyingView({
         <div className="sync-dialog__progress-fill" style={{ width: `${percent}%` }} />
       </div>
       <p className="sync-dialog__sub sync-dialog__sub--mono">
-        {progress.state === "copying"
-          ? `${formatBytes(progress.bytesCopied)} / ${formatBytes(progress.totalBytes)} (${percent}%)`
-          : `0 / ${formatBytes(plan.totalSizeBytes)}`}
+        {progress.state === "copying" &&
+          `${formatBytes(progress.bytesCopied)} / ${formatBytes(progress.totalBytes)} (${percent}%)`}
+        {progress.state === "wiping" &&
+          `${(progress.currentIndex + 1).toLocaleString()} / ${progress.totalFiles.toLocaleString()} files (${percent}%)`}
+        {progress.state === "preparing" && `0 / ${formatBytes(plan.totalSizeBytes)}`}
       </p>
 
       <div className="sync-dialog__actions">
@@ -290,6 +381,12 @@ function DoneView({
     <>
       <h2 className={titleClass}>{titleText}</h2>
       <p className="sync-dialog__sub">
+        {state.wipedCount > 0 && (
+          <>
+            {state.wipedCount.toLocaleString()} cleared
+            {" · "}
+          </>
+        )}
         {state.copiedCount.toLocaleString()} copied
         {state.skippedCount > 0 && (
           <>

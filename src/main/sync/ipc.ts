@@ -53,15 +53,18 @@ export function registerSyncHandlers(deps: SyncHandlerDeps = {}): void {
     },
   );
 
-  ipcMain.handle(SYNC_EXECUTE_PLAN, async (_event, planId: SyncPlanId): Promise<void> => {
-    const plan = plans.get(planId);
-    if (!plan) throw new Error(`Plan ${planId} not found`);
-    try {
-      await executor.execute(plan);
-    } finally {
-      plans.delete(planId);
-    }
-  });
+  ipcMain.handle(
+    SYNC_EXECUTE_PLAN,
+    async (_event, planId: SyncPlanId, opts: { wipeDevice?: boolean } = {}): Promise<void> => {
+      const plan = plans.get(planId);
+      if (!plan) throw new Error(`Plan ${planId} not found`);
+      try {
+        await executor.execute(plan, { wipeDevice: opts.wipeDevice ?? false });
+      } finally {
+        plans.delete(planId);
+      }
+    },
+  );
 
   ipcMain.handle(SYNC_CANCEL_PLAN, async (_event, planId: SyncPlanId): Promise<void> => {
     executor.cancel(planId);
