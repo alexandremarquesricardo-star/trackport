@@ -68,6 +68,13 @@ Code signing is opt-in via environment variables and is read by electron-builder
 
 Never commit certificates or passwords. Release CI loads them from encrypted secrets.
 
+### Cutting a release
+
+1. Bump `version` in `package.json` and commit on `main`.
+2. Tag and push: `git tag v0.X.Y && git push origin v0.X.Y`.
+3. The [`Release`](.github/workflows/release.yml) workflow runs on tag push: lints, format-checks, tests, type-checks, and builds the Windows NSIS installer, then uploads the installer + `latest.yml` + `.blockmap` (used by electron-updater) to a **draft** GitHub Release for that tag.
+4. Smoke-test the installer locally, then promote the draft Release to published from the GitHub UI. Already-installed copies of the app pick up the new version on their next launch via the auto-updater.
+
 ## Project structure
 
 ```

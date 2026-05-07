@@ -1,0 +1,78 @@
+name: Release
+
+# Triggered by pushing a v-prefixed tag, e.g. `git tag v0.2.0 && git push --tags`.
+# The Windows build step uploads its installer to a draft GitHub Release;
+# electron-builder's GH provider creates the draft on first artifact and
+# appends to it on subsequent platform jobs. Promote the draft to a real
+# release manually after smoke-testing the binaries.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  # We're going to upload artifacts to a Release, which needs write access.
+  contents: write
+
+# Cancel an in-flight release if a newer tag is pushed against the same ref.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  windows:
+    name: Windows installer
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Cache Electron download
+        uses: actions/cache@v4
+        with:
+          path: ~/AppData/Local/electron/Cache
+          key: electron-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            electron-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint + format-check + tests
+        # Same gate as CI; we don't ship a binary that wouldn't pass the
+        # main-branch checks. Cheaper to fail here than after a 4-minute
+        # NSIS build.
+        run: |
+          npm run lint
+          npm run format:check
+          npm test
+          npm run typecheck
+
+      - name: Build + publish Windows installer
+        # `electron-builder --publish always` builds the NSIS installer,
+        # generates the latest.yml + .blockmap auto-update sidecars, and
+        # uploads everything to a draft GitHub Release for this tag.
+        # GH_TOKEN is the standard secret — the default GITHUB_TOKEN has
+        # the `contents: write` permission granted above.
+        run: npx electron-builder --win --publish always
+        env:
+          # Code signing is opt-in. Set these in the repo's Actions
+          # secrets to enable Authenticode signing of the installer:
+          #   WIN_CSC_LINK            — base64 of your .pfx OR a URL
+          #   WIN_CSC_KEY_PASSWORD    — the PFX password
+          # Leave both unset for unsigned builds (will trigger SmartScreen
+          # warnings on first install — fine for early testing).
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
