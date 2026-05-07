@@ -1,10 +1,11 @@
-import { app, BrowserWindow, screen, shell } from "electron";
+import { app, BrowserWindow, Menu, screen, shell } from "electron";
 import { join } from "node:path";
 import { DeviceDetector } from "./devices/detector";
 import { bindDeviceEventsToWindow, registerDeviceHandlers } from "./devices/ipc";
 import { LibraryStore } from "./library/store";
 import { registerLibraryHandlers } from "./library/ipc";
 import { incrementalScan, tracksToAudioFiles } from "./library/scanner";
+import { buildAppMenu, configureAboutPanel } from "./menu";
 import { PreferencesStore } from "./preferences/store";
 import { registerPreferencesHandlers } from "./preferences/ipc";
 import { scanAudioFiles } from "./sync/audio-scan";
@@ -136,6 +137,8 @@ function bindWindowStatePersistence(window: BrowserWindow): void {
 
 app.whenReady().then(async () => {
   app.setAppUserModelId("com.trackport.app");
+  configureAboutPanel();
+  Menu.setApplicationMenu(buildAppMenu());
 
   await Promise.all([preferences.load(), library.load()]);
 
