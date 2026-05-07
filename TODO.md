@@ -7,7 +7,7 @@
 
 ## Where we are
 
-**Status:** v0.1.0 — local Electron app, 24 commits on `main`, CI green, working end-to-end on Windows.
+**Status:** v0.1.0 — local Electron app, 25 commits on `main`, CI green, working end-to-end on Windows.
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -38,7 +38,8 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 20  | `b76a59e`             | Drag-and-drop a folder onto the window to set / replace the library              |
 | 21  | `75235b3`             | Scanner test suite — 15 tests with temp-dir fixtures, cache-hit identity check   |
 | 22  | `61872e3`             | Native app menu — proper Mac app menu, About panel, no more "Electron"           |
-| 23  | _next_                | Clickable paths — library root + device mount open in OS file manager            |
+| 23  | `5cb1868`             | Clickable paths — library root + device mount open in OS file manager            |
+| 24  | _next_                | Windows distribution polish — LICENSE, publisher, NSIS license, signing-ready    |
 
 ### What works today
 

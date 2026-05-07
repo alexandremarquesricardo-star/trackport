@@ -4,8 +4,18 @@
   "private": true,
   "description": "Get your music from where it lives onto your offline device. Cross-platform sync tool for swim headphones, USB MP3 players, and similar offline audio devices.",
   "main": "./out/main/index.js",
-  "author": "TrackPort",
+  "author": {
+    "name": "Ricardo Marques"
+  },
   "license": "MIT",
+  "homepage": "https://github.com/alexandremarquesricardo-star/trackport",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alexandremarquesricardo-star/trackport.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alexandremarquesricardo-star/trackport/issues"
+  },
   "scripts": {
     "dev": "node scripts/electron-vite.cjs dev",
     "build": "npm run typecheck && electron-vite build",

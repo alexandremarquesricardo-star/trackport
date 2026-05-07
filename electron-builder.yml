@@ -1,6 +1,6 @@
 appId: com.trackport.app
 productName: TrackPort
-copyright: Copyright (c) 2026 TrackPort
+copyright: Copyright (c) 2026 Ricardo Marques
 
 directories:
   output: release
@@ -14,20 +14,39 @@ extraResources:
   - from: build/icon.png
     to: icon.png
 
+# Code signing is opt-in via environment variables — electron-builder picks
+# up CSC_LINK / WIN_CSC_LINK (path or base64 of the .pfx) and
+# CSC_KEY_PASSWORD automatically when set, otherwise the build is
+# unsigned. Do NOT hard-code paths or passwords here. CI loads from
+# encrypted secrets at release time.
 win:
   target:
     - target: nsis
       arch: [x64]
   icon: build/icon.ico
+  # Don't fail the build when the cert verification step can't run (no cert
+  # configured). Once a cert is in place, signtool runs and this is a no-op.
+  verifyUpdateCodeSignature: false
+  signtoolOptions:
+    publisherName: Ricardo Marques
   artifactName: ${productName}-${version}-${arch}-Setup.${ext}
 
 nsis:
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
+  # Keep userData (preferences.json, library.json) on uninstall so users
+  # who reinstall don't lose their library or per-device profile.
   deleteAppDataOnUninstall: false
   installerIcon: build/icon.ico
   uninstallerIcon: build/icon.ico
+  # NSIS shows the license text in the install wizard; required for the
+  # MIT attribution to actually reach the user.
+  license: LICENSE
+  # Standard install/uninstall shortcuts so the app appears in Start Menu
+  # and on the Desktop without extra configuration.
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
 
 mac:
   target:
@@ -35,6 +54,12 @@ mac:
       arch: [arm64, x64]
   icon: build/icon.png
   category: public.app-category.music
+  # Hardened runtime is required for notarization on macOS 10.14.5+.
+  # Notarization itself runs only when APPLE_ID + APPLE_APP_SPECIFIC_PASSWORD
+  # + APPLE_TEAM_ID env vars are set; otherwise the unsigned DMG still
+  # builds (with a Gatekeeper warning at first open).
+  hardenedRuntime: true
+  gatekeeperAssess: false
   artifactName: ${productName}-${version}-${arch}.${ext}
 
 linux:

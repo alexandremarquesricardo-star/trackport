@@ -27,23 +27,46 @@ TrackPort is the first app to treat the **transfer event** as a first-class prod
 ## Stack
 
 - **Desktop:** Electron + React + TypeScript + Vite (electron-vite)
-- **Backend (planned):** Node.js + Hono on Railway
-- **CI/CD:** GitHub Actions → GitHub Releases for desktop binaries
-- **Mobile (future):** React Native or PWA
+- **Tests:** Vitest (45 tests covering the smart-fit logic, natural-sort, window-bounds validator, and the incremental library scanner)
+- **CI/CD:** GitHub Actions (lint + format-check + tests + typecheck + build on every push); GitHub Releases for desktop binaries
+- **Backend (planned):** Node.js + Hono on Railway (Spotify metadata matcher only)
+- **Mobile (future):** Android via React Native — iOS is largely blocked by Apple's USB MSC restrictions
+
+## Install
+
+Pre-built installers ship via [GitHub Releases](https://github.com/alexandremarquesricardo-star/trackport/releases).
+
+- **Windows:** download `TrackPort-X.Y.Z-x64-Setup.exe` and run. Until code signing is configured, Microsoft SmartScreen will flag the installer as "unrecognized" — click **More info** → **Run anyway**. The app auto-updates from subsequent releases.
+- **macOS:** download `TrackPort-X.Y.Z-{arm64,x64}.dmg`. Until notarization is configured, you'll need to right-click → Open the first time to bypass Gatekeeper.
+- **Linux:** download the AppImage, `chmod +x` it, run.
 
 ## Development
 
-Requirements: Node.js 20+ and npm.
+Requirements: Node.js 22+ and npm.
 
 ```sh
-npm install
-npm run dev        # launch the app in dev mode
+npm install        # postinstall rebuilds drivelist for Electron's ABI
+npm run dev        # launch the app in dev mode (live reload)
 npm run typecheck  # validate TypeScript across main, preload, and renderer
+npm run lint       # ESLint flat config (main + preload + renderer + scripts)
+npm run format     # prettier --write across the tree
+npm run test       # vitest run (single pass, CI mode)
+npm run test:watch # vitest in watch mode
 npm run build      # production build (typecheck + bundle)
-npm run dist:win   # build a Windows installer (NSIS)
-npm run dist:mac   # build macOS DMG
-npm run dist:linux # build Linux AppImage
+npm run dist:win   # Windows NSIS installer
+npm run dist:mac   # macOS DMG (universal: arm64 + x64)
+npm run dist:linux # Linux AppImage
+npm run icons      # rebuild build/icon.{png,ico} from build/icon.svg
 ```
+
+### Code signing
+
+Code signing is opt-in via environment variables and is read by electron-builder automatically:
+
+- **Windows** (Authenticode): set `WIN_CSC_LINK` (path to your `.pfx` or its base64) and `WIN_CSC_KEY_PASSWORD`. Without these, the installer builds unsigned and triggers SmartScreen on first install.
+- **macOS** (Apple Developer ID): set `CSC_LINK` (path to `.p12` or base64) and `CSC_KEY_PASSWORD`. For notarization, also set `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, and `APPLE_TEAM_ID`. Without these, the DMG builds unsigned and triggers Gatekeeper on first open.
+
+Never commit certificates or passwords. Release CI loads them from encrypted secrets.
 
 ## Project structure
 
@@ -52,12 +75,15 @@ src/
   main/      Electron main process — window lifecycle, OS integration, USB/file access
   preload/   Context bridge between main and renderer (the only safe IPC surface)
   renderer/  React UI (the user-facing 3-tap flow lives here)
+  shared/    Types and pure logic shared by main + renderer (single source of truth)
+build/       Icon master + CI-generated raster assets (committed for build reproducibility)
+release/     electron-builder output (gitignored)
 ```
 
 ## Status
 
-`v0.1.0` — project scaffold. The app starts and shows the home screen. Device detection, library import, and sync are landing in the next iterations.
+`v0.1.0` — fully functional desktop app. Detects USB devices live, imports a music library with a cached track index, builds preflight plans with smart-fit, syncs with order preservation for transmission-time devices (Shokz / FINIS), supports drag-and-drop folder, persists window state, has a native menu bar, and recovers from render errors.
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
