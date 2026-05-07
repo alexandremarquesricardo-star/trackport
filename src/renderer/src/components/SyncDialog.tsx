@@ -1,6 +1,8 @@
 import "./SyncDialog.css";
-import { computeFitSuggestions, type FitStrategyId } from "../../../shared/fit";
+import { computeFitSuggestions, type FitStrategyId, type FitSuggestion } from "../../../shared/fit";
 import type { SyncState } from "../hooks/useSync";
+
+const DROP_PREVIEW_LIMIT = 12;
 
 interface Props {
   state: SyncState;
@@ -122,15 +124,7 @@ function PreflightView({
       {fitSuggestions.length > 0 && (
         <div className="sync-dialog__fits">
           {fitSuggestions.map((s) => (
-            <button
-              key={s.strategy}
-              type="button"
-              className="sync-dialog__fit"
-              onClick={() => onApplyFit(s.strategy)}
-            >
-              <span className="sync-dialog__fit-label">{s.label}</span>
-              <span className="sync-dialog__fit-desc">{s.description}</span>
-            </button>
+            <FitSuggestionCard key={s.strategy} suggestion={s} onApply={onApplyFit} />
           ))}
         </div>
       )}
@@ -252,6 +246,54 @@ function WipeToggle({
         </span>
       </span>
     </label>
+  );
+}
+
+function FitSuggestionCard({
+  suggestion,
+  onApply,
+}: {
+  suggestion: FitSuggestion;
+  onApply: (strategy: FitStrategyId) => void;
+}): JSX.Element {
+  const visible = suggestion.droppedFiles.slice(0, DROP_PREVIEW_LIMIT);
+  const more = suggestion.droppedFiles.length - visible.length;
+  return (
+    <div className="sync-dialog__fit">
+      <div className="sync-dialog__fit-header">
+        <div className="sync-dialog__fit-text">
+          <span className="sync-dialog__fit-label">{suggestion.label}</span>
+          <span className="sync-dialog__fit-desc">{suggestion.description}</span>
+        </div>
+        <button
+          type="button"
+          className="sync-dialog__fit-apply"
+          onClick={() => onApply(suggestion.strategy)}
+        >
+          Apply
+        </button>
+      </div>
+      {suggestion.droppedFiles.length > 0 && (
+        <details className="sync-dialog__fit-drops">
+          <summary className="sync-dialog__fit-drops-summary">
+            Show what would be dropped ({suggestion.droppedCount.toLocaleString()})
+          </summary>
+          <ol className="sync-dialog__fit-drops-list">
+            {visible.map((f, i) => (
+              <li key={`${i}-${f.name}`} className="sync-dialog__fit-drops-item">
+                <span className="sync-dialog__fit-drops-name">{f.name}</span>
+                <span className="sync-dialog__fit-drops-size">{formatBytes(f.sizeBytes)}</span>
+              </li>
+            ))}
+            {more > 0 && (
+              <li className="sync-dialog__fit-drops-item sync-dialog__fit-drops-item--more">
+                + {more.toLocaleString()} more
+              </li>
+            )}
+          </ol>
+        </details>
+      )}
+    </div>
   );
 }
 

@@ -20,6 +20,12 @@ export interface FitSuggestion {
   droppedCount: number;
   keptBytes: number;
   droppedBytes: number;
+  /**
+   * The actual files that would be dropped if this strategy were applied.
+   * Surfaced in preflight so the user can see *what* gets cut before they
+   * commit — same data, just exposed instead of hidden behind a click.
+   */
+  droppedFiles: AudioFile[];
   fits: boolean;
 }
 
@@ -96,6 +102,7 @@ export function computeFitSuggestions(files: AudioFile[], freeBytes: number): Fi
       droppedCount: droppedFiles.length,
       keptBytes,
       droppedBytes,
+      droppedFiles,
       fits: keptBytes <= freeBytes,
     };
   });
