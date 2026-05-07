@@ -7,7 +7,7 @@
 
 ## Where we are
 
-**Status:** v0.1.0 — local Electron app, 17 commits on `main`, CI green, working end-to-end on Windows.
+**Status:** v0.1.0 — local Electron app, 18 commits on `main`, CI green, working end-to-end on Windows.
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -31,7 +31,8 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 13  | `cfb28b2`             | Cached library index — mtime-based incremental scan, planner reads cached tracks |
 | 14  | `1972cc2`             | ESLint + Prettier in CI (flat config, format check, lint gate)                   |
 | 15  | `2625b94`             | "Clear device first" toggle — wipe phase before copy, default ON for Shokz       |
-| 16  | _next_                | Per-strategy fit-drop preview — see what gets cut before applying a fit          |
+| 16  | `1c8ff40`             | Per-strategy fit-drop preview — see what gets cut before applying a fit          |
+| 17  | _next_                | Modal a11y + keyboard shortcuts (Esc/Enter/focus trap) + global error boundary   |
 
 ### What works today
 
@@ -48,6 +49,10 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 - "Clear device first" toggle in preflight, default ON for transmission-time
   devices so leftover files don't break order preservation
 - Per-strategy "what would be dropped" preview on each fit suggestion
+- Sync dialog has full keyboard a11y (Esc dismiss, Enter primary, Tab trap,
+  initial primary focus, focus restored to trigger on close)
+- Top-level React error boundary recovers a renderer crash with a Reload action
+  instead of a black window
 - CI typechecks, lints, format-checks, and builds on every push to main / PR
 
 ---

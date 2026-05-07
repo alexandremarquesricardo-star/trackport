@@ -1,5 +1,7 @@
+import { useRef } from "react";
 import "./SyncDialog.css";
 import { computeFitSuggestions, type FitStrategyId, type FitSuggestion } from "../../../shared/fit";
+import { useDialogShortcuts } from "../hooks/useDialogShortcuts";
 import type { SyncState } from "../hooks/useSync";
 
 const DROP_PREVIEW_LIMIT = 12;
@@ -21,9 +23,35 @@ export function SyncDialog({
   onApplyFit,
   onSetWipeDevice,
 }: Props): JSX.Element | null {
-  if (state.phase === "idle" || state.phase === "picking") return null;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const open = state.phase !== "idle" && state.phase !== "picking";
+  const phase = state.phase;
 
-  const dismissable = state.phase === "done" || state.phase === "error";
+  // Phase-aware keyboard policy. Esc dismisses where safe and cancels
+  // where appropriate; in the middle of copying or wiping, we don't bind
+  // it at all so a stray Esc can't kill an in-flight write.
+  const onEscape = (() => {
+    if (phase === "preflight") return onClose;
+    if (phase === "done" || phase === "error") return onClose;
+    return null;
+  })();
+
+  // Enter triggers the dialog's primary action when focus is somewhere
+  // ambient (the dialog body itself). Inside a button, the browser
+  // already does the right thing.
+  const onEnter = (() => {
+    if (phase === "preflight" && state.plan.fits && state.plan.files.length > 0) {
+      return onConfirm;
+    }
+    if (phase === "done" || phase === "error") return onClose;
+    return null;
+  })();
+
+  useDialogShortcuts({ active: open, containerRef, phaseKey: phase, onEscape, onEnter });
+
+  if (!open) return null;
+
+  const dismissable = phase === "done" || phase === "error";
 
   return (
     <div
@@ -31,9 +59,11 @@ export function SyncDialog({
       onClick={dismissable ? onClose : undefined}
       role="dialog"
       aria-modal="true"
+      aria-labelledby="sync-dialog-title"
+      aria-busy={phase === "copying"}
     >
-      <div className="sync-dialog" onClick={(e) => e.stopPropagation()}>
-        {state.phase === "preflight" && (
+      <div className="sync-dialog" ref={containerRef} onClick={(e) => e.stopPropagation()}>
+        {phase === "preflight" && (
           <PreflightView
             state={state}
             onConfirm={onConfirm}
@@ -42,9 +72,9 @@ export function SyncDialog({
             onSetWipeDevice={onSetWipeDevice}
           />
         )}
-        {state.phase === "copying" && <CopyingView state={state} onCancel={onCancel} />}
-        {state.phase === "done" && <DoneView state={state} onClose={onClose} />}
-        {state.phase === "error" && <ErrorView state={state} onClose={onClose} />}
+        {phase === "copying" && <CopyingView state={state} onCancel={onCancel} />}
+        {phase === "done" && <DoneView state={state} onClose={onClose} />}
+        {phase === "error" && <ErrorView state={state} onClose={onClose} />}
       </div>
     </div>
   );
@@ -73,7 +103,9 @@ function PreflightView({
 
   return (
     <>
-      <h2 className="sync-dialog__title">Ready to sync</h2>
+      <h2 id="sync-dialog-title" className="sync-dialog__title">
+        Ready to sync
+      </h2>
       <p className="sync-dialog__sub">
         From <code className="sync-dialog__path">{plan.sourceFolder}</code>
       </p>
@@ -362,7 +394,9 @@ function CopyingView({
 
   return (
     <>
-      <h2 className="sync-dialog__title">{wiping ? "Clearing device…" : "Syncing…"}</h2>
+      <h2 id="sync-dialog-title" className="sync-dialog__title">
+        {wiping ? "Clearing device…" : "Syncing…"}
+      </h2>
       {progress.state === "copying" && (
         <p className="sync-dialog__sub">
           {progress.currentIndex + 1} of {progress.totalFiles} ·{" "}
@@ -421,7 +455,9 @@ function DoneView({
   const titleText = hasFailures ? "Sync finished with errors" : "Sync complete";
   return (
     <>
-      <h2 className={titleClass}>{titleText}</h2>
+      <h2 id="sync-dialog-title" className={titleClass}>
+        {titleText}
+      </h2>
       <p className="sync-dialog__sub">
         {state.wipedCount > 0 && (
           <>
@@ -487,7 +523,9 @@ function ErrorView({
 }): JSX.Element {
   return (
     <>
-      <h2 className="sync-dialog__title sync-dialog__title--error">Sync stopped</h2>
+      <h2 id="sync-dialog-title" className="sync-dialog__title sync-dialog__title--error">
+        Sync stopped
+      </h2>
       <p className="sync-dialog__sub">{state.message}</p>
       <div className="sync-dialog__actions">
         <button
