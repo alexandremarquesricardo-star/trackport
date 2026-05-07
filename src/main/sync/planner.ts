@@ -14,6 +14,16 @@ export interface BuildPlanInput {
 }
 
 /**
+ * Resolves a source folder to its audio file list. Defaults to a fresh
+ * recursive scan, but the wiring in main/index.ts substitutes a
+ * library-cache-aware version so that "Sync library" doesn't pay for a
+ * full disk walk on every click.
+ */
+export type ResolveTracks = (sourceFolder: string) => Promise<AudioFile[]>;
+
+const defaultResolveTracks: ResolveTracks = (folder) => scanAudioFiles(folder);
+
+/**
  * Build a SyncPlan from a source folder, a device mount path, and a device
  * profile id. The profile's supportedExtensions list partitions the scan
  * results into "files that will be copied" and "unsupportedFiles" — the
@@ -29,11 +39,14 @@ export interface BuildPlanInput {
  * The plan has a UUID so the executor can be invoked separately and the
  * renderer can reference a specific plan to cancel.
  */
-export async function buildPlan(input: BuildPlanInput): Promise<SyncPlan> {
+export async function buildPlan(
+  input: BuildPlanInput,
+  resolveTracks: ResolveTracks = defaultResolveTracks,
+): Promise<SyncPlan> {
   const profile = getProfile(input.profileId);
   const supported = new Set(profile.supportedExtensions.map((e) => e.toLowerCase()));
 
-  const allFiles = await scanAudioFiles(input.sourceFolder);
+  const allFiles = await resolveTracks(input.sourceFolder);
   const supportedFiles: AudioFile[] = [];
   const unsupportedFiles: AudioFile[] = [];
   for (const f of allFiles) {

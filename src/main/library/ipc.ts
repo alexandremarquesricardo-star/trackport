@@ -1,5 +1,5 @@
 import { BrowserWindow, dialog, ipcMain } from "electron";
-import { scanAudioFiles } from "../sync/audio-scan";
+import { incrementalScan } from "./scanner";
 import type { Library } from "../../shared/library";
 import type { LibraryStore } from "./store";
 
@@ -24,42 +24,33 @@ export function registerLibraryHandlers(store: LibraryStore): void {
     if (result.canceled || result.filePaths.length === 0) return null;
 
     const root = result.filePaths[0];
-    const stats = await indexFolder(root);
+    // Scan first, then publish — this avoids ever persisting a half-formed
+    // library (zero counts) if the scan races a crash. setLibrary's
+    // debounced write is replaced by the one from applyScanResult before
+    // either fires, so we end up with a single write carrying real stats.
+    const scan = await incrementalScan(root, null);
+    const totalBytes = scan.tracks.reduce((acc, t) => acc + t.sizeBytes, 0);
     const now = new Date().toISOString();
-    const library: Library = {
+    store.setLibrary({
       root,
       addedAt: now,
       lastScannedAt: now,
-      trackCount: stats.trackCount,
-      totalBytes: stats.totalBytes,
-    };
-    store.set(library);
-    return library;
+      trackCount: scan.tracks.length,
+      totalBytes,
+    });
+    store.applyScanResult(scan, { updateScannedAt: false });
+    return store.get();
   });
 
   ipcMain.handle(LIBRARY_REMOVE, async (): Promise<void> => {
-    store.set(null);
+    store.setLibrary(null);
   });
 
   ipcMain.handle(LIBRARY_RESCAN, async (): Promise<Library | null> => {
     const current = store.get();
     if (!current) return null;
-    const stats = await indexFolder(current.root);
-    const updated: Library = {
-      ...current,
-      lastScannedAt: new Date().toISOString(),
-      trackCount: stats.trackCount,
-      totalBytes: stats.totalBytes,
-    };
-    store.set(updated);
-    return updated;
+    const scan = await incrementalScan(current.root, store.getScanCache());
+    store.applyScanResult(scan, { updateScannedAt: true });
+    return store.get();
   });
-}
-
-async function indexFolder(root: string): Promise<{ trackCount: number; totalBytes: number }> {
-  const files = await scanAudioFiles(root);
-  return {
-    trackCount: files.length,
-    totalBytes: files.reduce((acc, f) => acc + f.sizeBytes, 0),
-  };
 }

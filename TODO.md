@@ -7,7 +7,7 @@
 
 ## Where we are
 
-**Status:** v0.1.0 — local Electron app, 13 commits on `main`, CI green, working end-to-end on Windows.
+**Status:** v0.1.0 — local Electron app, 14 commits on `main`, CI green, working end-to-end on Windows.
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -28,6 +28,7 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 10 | `86bb92e` | Library import (persistent music root) |
 | 11 | `7d874fd` | Per-file copy-error recovery |
 | 12 | `788bdc0` | App icon + window chrome polish (mark + multi-res ico/png + header tighten-up) |
+| 13 | _next_ | Cached library index — mtime-based incremental scan, planner reads cached tracks |
 
 ### What works today
 
@@ -39,23 +40,20 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 - Smart-fits oversize plans (first-fit / drop-largest)
 - Remembers per-device profile + library root across launches
 - Continues past per-file copy errors, surfaces them in the done state
+- Caches the library track index (paths + sizes + mtimes) and reuses it on
+  every sync — only re-stats files in directories whose mtime moved
 - CI typecheck + build on every push to main / PR
 
 ---
 
 ## Next up (in order of leverage)
 
-### 1. Cached library index
-- Re-scanning on every sync starts to hurt at 10k+ tracks
-- mtime-based incremental indexing: keep the last-known file list in `library.json`, on rescan compare directory mtimes and only re-stat what changed
-- Surface "scanned 2 min ago — N tracks" without a fresh scan
-
-### 2. Linting + Prettier in CI
+### 1. Linting + Prettier in CI
 - ESLint + Prettier configs, `npm run lint` script, add to CI matrix
 - Catches dumb bugs and keeps formatting consistent
 - Cheap, durable
 
-### 3. Spotify metadata-only matcher (multi-iteration arc)
+### 2. Spotify metadata-only matcher (multi-iteration arc)
 The remaining big wedge feature. Will need:
 - Spotify Developer app (client ID / secret) — register at developer.spotify.com
 - Hono backend on Railway holding the secret + brokering token requests

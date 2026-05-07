@@ -4,9 +4,12 @@ import { DeviceDetector } from "./devices/detector";
 import { bindDeviceEventsToWindow, registerDeviceHandlers } from "./devices/ipc";
 import { LibraryStore } from "./library/store";
 import { registerLibraryHandlers } from "./library/ipc";
+import { incrementalScan, tracksToAudioFiles } from "./library/scanner";
 import { PreferencesStore } from "./preferences/store";
 import { registerPreferencesHandlers } from "./preferences/ipc";
+import { scanAudioFiles } from "./sync/audio-scan";
 import { bindSyncEventsToWindow, registerSyncHandlers } from "./sync/ipc";
+import type { AudioFile } from "../shared/sync";
 
 const detector = new DeviceDetector();
 const preferences = new PreferencesStore();
@@ -20,6 +23,29 @@ function resolveIconPath(): string {
   return app.isPackaged
     ? join(process.resourcesPath, "icon.png")
     : join(app.getAppPath(), "build", "icon.png");
+}
+
+/**
+ * Plan-build hook: when the user is syncing the library root, refresh the
+ * cached track index incrementally (cheap — only re-stats files in
+ * directories whose mtime moved) and hand the planner the cached list.
+ * Anything else (one-off "Sync folder…" picks) falls back to a fresh scan
+ * since there's no cache for it.
+ *
+ * The opportunistic scan deliberately does NOT bump `lastScannedAt` — that
+ * timestamp is the user's "I asked for a fresh scan" beat and shouldn't
+ * jump every time they click Sync.
+ */
+function makeResolveTracks(library: LibraryStore) {
+  return async (sourceFolder: string): Promise<AudioFile[]> => {
+    const lib = library.get();
+    if (!lib || lib.root !== sourceFolder) {
+      return scanAudioFiles(sourceFolder);
+    }
+    const scan = await incrementalScan(sourceFolder, library.getScanCache());
+    library.applyScanResult(scan, { updateScannedAt: false });
+    return tracksToAudioFiles(library.getTracks());
+  };
 }
 
 function createWindow(): BrowserWindow {
@@ -71,7 +97,7 @@ app.whenReady().then(async () => {
   registerDeviceHandlers(detector);
   registerPreferencesHandlers(preferences);
   registerLibraryHandlers(library);
-  registerSyncHandlers();
+  registerSyncHandlers({ resolveTracks: makeResolveTracks(library) });
   detector.on("error", (err) => {
     console.error("[DeviceDetector] poll error:", err);
   });

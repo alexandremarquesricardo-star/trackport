@@ -1,7 +1,7 @@
 import { BrowserWindow, dialog, ipcMain } from "electron";
 import type { FitStrategyId } from "../../shared/fit";
 import type { SyncPlan, SyncPlanId, SyncProgress } from "../../shared/sync";
-import { applyFitToPlan, buildPlan, type BuildPlanInput } from "./planner";
+import { applyFitToPlan, buildPlan, type BuildPlanInput, type ResolveTracks } from "./planner";
 import { SyncExecutor } from "./executor";
 
 export const SYNC_PICK_FOLDER = "sync:pick-folder";
@@ -14,7 +14,16 @@ export const SYNC_PROGRESS = "sync:progress";
 const plans = new Map<SyncPlanId, SyncPlan>();
 const executor = new SyncExecutor();
 
-export function registerSyncHandlers(): void {
+export interface SyncHandlerDeps {
+  /**
+   * Optional override for how the planner pulls audio file lists. The
+   * default falls back to a fresh disk scan; main/index.ts substitutes a
+   * library-cache-aware version so library syncs skip the full walk.
+   */
+  resolveTracks?: ResolveTracks;
+}
+
+export function registerSyncHandlers(deps: SyncHandlerDeps = {}): void {
   ipcMain.handle(SYNC_PICK_FOLDER, async (event): Promise<string | null> => {
     const win = BrowserWindow.fromWebContents(event.sender);
     const opts = {
@@ -32,7 +41,7 @@ export function registerSyncHandlers(): void {
   ipcMain.handle(
     SYNC_BUILD_PLAN,
     async (_event, input: BuildPlanInput): Promise<SyncPlan> => {
-      const plan = await buildPlan(input);
+      const plan = await buildPlan(input, deps.resolveTracks);
       plans.set(plan.id, plan);
       return plan;
     },
