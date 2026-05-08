@@ -7,3 +7,4 @@ build/icon.png
 build/icon.ico
 build/icon.svg
 package-lock.json
+server/dist/

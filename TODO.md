@@ -1,7 +1,7 @@
 # TrackPort — TODO
 
 > Living plan. Update as iterations land.
-> Last updated: 2026-05-07
+> Last updated: 2026-05-08
 
 ---
 
@@ -103,10 +103,38 @@ The remaining big wedge feature. Will need:
 
 Roughly 3-4 iterations:
 
-1. Backend skeleton on Railway + auth round-trip
-2. Track list fetch from Spotify URL
-3. Local library matcher (artist/title fuzzy match)
-4. UI integration in the dialog flow
+1. ✅ **Backend skeleton on Railway + auth round-trip** — `server/` directory:
+   Hono on Node, `/health` + `/spotify/ping`, Client Credentials token broker
+   with in-memory cache + concurrent-refresh de-dupe. Live at
+   <https://trackport-server-production.up.railway.app>; `/spotify/ping`
+   returns a fresh 1-hour token through the broker. **TODO:** rotate the
+   Client Secret (it was pasted into chat during setup).
+2. Track list fetch from Spotify URL — parse playlist URL/URI, call
+   `/v1/playlists/{id}/tracks`, return normalized `{ artist, title, album, isrc }[]`.
+3. Local library matcher (artist/title fuzzy match) — runs in the desktop app
+   against the cached library index; produces `{ matched, missing }`.
+4. UI integration in the dialog flow.
+
+### 2. Download website at trackport.app
+
+Static landing page in `site/` (HTML/CSS/vanilla JS, no build step). Detects
+the visitor's OS, fetches `/releases/latest` from the GitHub API, sets the
+right download asset URL, falls back to the GitHub releases page if the API
+is unreachable.
+
+**Hosting: Cloudflare Pages** — works on private repos for free, and the
+domain is already in the same Cloudflare account so the custom-domain hookup
+is one click (no manual DNS records needed).
+
+**Pending user steps:**
+
+- Cloudflare → Workers & Pages → Pages → "Create" → connect GitHub →
+  pick `trackport` repo
+- Build settings: framework preset `None`, build command empty, output
+  directory `site`, root directory empty
+- After first deploy, attach custom domain `trackport.app` from the
+  Pages project's Custom domains tab — Cloudflare creates the DNS record
+  automatically
 
 ---
 

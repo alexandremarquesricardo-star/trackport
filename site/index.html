@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TrackPort — get music onto your offline device, in 3 taps</title>
+    <meta
+      name="description"
+      content="Free, cross-platform desktop sync for swim headphones, USB MP3 players, and other offline audio devices. No subscription, no DRM bypass."
+    />
+    <meta name="theme-color" content="#0e0f12" />
+    <link rel="icon" type="image/png" href="icon.png" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <img src="icon.png" alt="" width="28" height="28" />
+        <span>TrackPort</span>
+      </div>
+      <nav>
+        <a href="https://github.com/alexandremarquesricardo-star/trackport">GitHub</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <h1>
+          Get your music onto your offline device.<br />
+          <span class="accent">In three taps.</span>
+        </h1>
+        <p class="lede">
+          A focused desktop tool for swim headphones, USB MP3 players, and the other devices that
+          don&apos;t stream. Pick the device. Sync your library. Copy. That&apos;s it.
+        </p>
+
+        <div class="downloads">
+          <a id="primary-download" class="btn-primary" href="#" rel="noopener">
+            <span class="btn-label">Download</span>
+            <span class="btn-platform" id="primary-platform">…</span>
+          </a>
+          <p class="version-line">
+            <span id="version-display">Loading latest release…</span>
+            &middot;
+            <a href="https://github.com/alexandremarquesricardo-star/trackport/releases"
+              >All releases</a
+            >
+          </p>
+        </div>
+
+        <ul class="all-platforms" aria-label="Other platforms">
+          <li>
+            <a class="btn-secondary" data-platform="win" href="#" rel="noopener"
+              >Windows installer</a
+            >
+          </li>
+          <li>
+            <a class="btn-secondary" data-platform="mac" href="#" rel="noopener">macOS DMG</a>
+          </li>
+          <li>
+            <a class="btn-secondary" data-platform="linux" href="#" rel="noopener"
+              >Linux AppImage</a
+            >
+          </li>
+        </ul>
+      </section>
+
+      <section class="features">
+        <ul>
+          <li>
+            <h3>Knows your device</h3>
+            <p>
+              Detects Shokz OpenSwim, FINIS Duo, and generic USB MP3 players. Filters formats per
+              device automatically.
+            </p>
+          </li>
+          <li>
+            <h3>Preserves order</h3>
+            <p>
+              For transmission-time devices like Shokz, tracks land in the order you want — not the
+              order the filesystem felt like.
+            </p>
+          </li>
+          <li>
+            <h3>Smart fit</h3>
+            <p>
+              Library bigger than the device? Pick a strategy, see what gets dropped, then copy.
+            </p>
+          </li>
+          <li>
+            <h3>Free forever</h3>
+            <p>
+              The desktop app is free, and stays free. Open source under MIT. No telemetry, no DRM
+              bypass, no audio extraction.
+            </p>
+          </li>
+        </ul>
+      </section>
+
+      <section class="install-notes">
+        <h2>First-install notes</h2>
+        <p>
+          <strong>Windows:</strong> the installer is currently unsigned, so SmartScreen will pop up
+          the first time you run it. Click &quot;More info&quot; → &quot;Run anyway&quot;. (Code
+          signing is on the roadmap once the project has more users.)
+        </p>
+        <p>
+          <strong>macOS:</strong> right-click the app the first time and choose &quot;Open&quot; to
+          bypass the Gatekeeper warning. Notarization will land soon.
+        </p>
+        <p>
+          <strong>Linux:</strong> AppImage — make it executable (<code>chmod +x</code>) and run.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Built by
+        <a href="https://github.com/alexandremarquesricardo-star">Ricardo Marques</a>
+        · MIT licensed ·
+        <a href="https://github.com/alexandremarquesricardo-star/trackport">Source on GitHub</a>
+      </p>
+    </footer>
+
+    <script src="main.js"></script>
+  </body>
+</html>

@@ -17,6 +17,12 @@ export default tseslint.config(
       "build/icons/**",
       "build/icon.svg",
       "package-lock.json",
+      // Server runs its own tsconfig and tooling; root linter would
+      // mis-scope its globals. Keep it self-contained.
+      "server/**",
+      // Static landing page — browser-target JS, no build step, separate
+      // concern from the Electron app source.
+      "site/**",
     ],
   },
 
