@@ -115,26 +115,91 @@ Roughly 3-4 iterations:
    against the cached library index; produces `{ matched, missing }`.
 4. UI integration in the dialog flow.
 
-### 2. Download website at trackport.app
+### 2. ✅ Download website at trackport.app
 
 Static landing page in `site/` (HTML/CSS/vanilla JS, no build step). Detects
 the visitor's OS, fetches `/releases/latest` from the GitHub API, sets the
 right download asset URL, falls back to the GitHub releases page if the API
-is unreachable.
+is unreachable. Hosted on Cloudflare Pages (auto-deploys from `main`),
+custom domain `trackport.app` attached with SSL active. `www.trackport.app`
+also wired (apex + www both resolve).
 
-**Hosting: Cloudflare Pages** — works on private repos for free, and the
-domain is already in the same Cloudflare account so the custom-domain hookup
-is one click (no manual DNS records needed).
+---
 
-**Pending user steps:**
+## Open follow-ups (next session)
 
-- Cloudflare → Workers & Pages → Pages → "Create" → connect GitHub →
-  pick `trackport` repo
-- Build settings: framework preset `None`, build command empty, output
-  directory `site`, root directory empty
-- After first deploy, attach custom domain `trackport.app` from the
-  Pages project's Custom domains tab — Cloudflare creates the DNS record
-  automatically
+### Cut first published release v0.1.0
+
+The release workflow is wired but no tag has been pushed yet, so
+`/releases/latest` returns 404 and the site's download buttons fall back
+to the all-releases page. Steps:
+
+```sh
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+That triggers `.github/workflows/release.yml` — Win + Mac jobs build in
+parallel (~10 min), upload installers + auto-update sidecars to a draft
+Release. Then on github.com → Releases → Edit the draft → "Generate
+release notes" → "Publish release". The moment it's published (not draft),
+trackport.app's download buttons auto-fill with direct asset URLs.
+
+### Rotate Spotify Client Secret
+
+The current secret was pasted into chat during Railway setup, so it sits
+in the conversation transcript. Rotate before the project sees real users:
+
+1. Spotify Dashboard → trackport app → Settings → "Rotate client secret"
+2. Copy the new secret
+3. From `server/`, run:
+   ```sh
+   railway variables --set "SPOTIFY_CLIENT_SECRET=<new-secret>"
+   ```
+4. Railway redeploys automatically. Verify with
+   `curl https://trackport-server-production.up.railway.app/spotify/ping`
+   (should still return `tokenAcquired: true`).
+
+### SEO + discoverability pass for trackport.app
+
+Today the page has only the basic `<title>` and `<meta name="description">`.
+For a download landing page where most traffic will be from search ("sync
+music to shokz openswim", "transfer mp3 to swim headphones"), this is
+under-baked. Worth a focused 30-min pass:
+
+- Open Graph tags (`og:title`, `og:description`, `og:image`, `og:url`) so
+  links shared on Discord / Reddit / WhatsApp render with a preview card
+- Twitter Card tags (`twitter:card`, `twitter:image`)
+- JSON-LD structured data: `SoftwareApplication` schema with
+  `applicationCategory: "Multimedia"`, `operatingSystem`, `softwareVersion`,
+  `offers.price: "0"`. This gets you rich snippets in Google.
+- `<link rel="canonical">` pointing at `https://trackport.app/`
+- `site/robots.txt` (allow all) + `site/sitemap.xml` (one URL, but having
+  it makes Google Search Console happy)
+- Submit to Google Search Console (verify via DNS TXT record at Cloudflare,
+  since the domain is there) and Bing Webmaster Tools
+- Run Lighthouse on the deployed site, fix anything red. Specifically watch
+  for: image dimensions on `icon.png`, font swap, contrast ratios
+
+Target: Lighthouse SEO score 100, perf >95.
+
+### Monetization — documented decisions
+
+**Tier model (already agreed):** desktop app free forever, optional Plus
+tier for cloud-backed features (Spotify matching first). Don't pick the
+Plus price until the matcher has shipped and seen real usage.
+
+**No AdSense / display ads on the website. Ever.** Three reasons:
+
+1. The site copy promises "no telemetry"; AdSense is third-party tracking.
+2. Math is terrible at this scale — $0.30–15/month while torching trust.
+3. EU cookie-consent banners would gate the download button.
+
+**Affiliate links to compatible devices:** OK to revisit _after_ ~1000
+monthly visitors. A "Compatible: Shokz OpenSwim, FINIS Duo" footer block
+with Amazon Associates URLs is contextually helpful, not spammy. Until
+then, just a GitHub Sponsors / "Buy me a coffee" footer link is fine
+(low pressure, no tracking).
 
 ---
 
