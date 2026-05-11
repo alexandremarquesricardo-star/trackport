@@ -55,13 +55,21 @@ export interface LibraryApi {
    */
   rescan: () => Promise<Library | null>;
   /**
-   * Fetch a Spotify playlist via the broker and match it against the
-   * cached library index. `playlistRef` is the URL / URI / raw ID — the
-   * broker parses whichever form the user pasted.
+   * Fetch a Spotify playlist (using the user's PKCE token) and match it
+   * against the cached library index. `playlistRef` is a URL / URI /
+   * raw ID — the runner parses whichever form the user pasted.
    *
    * Never throws; surfaces failures via the discriminated `MatchOutcome`
-   * so the renderer can branch on `code` (no_library, invalid_ref,
-   * not_found, access_denied, broker_error, network_error, timeout).
+   * so the renderer can branch on `code` (no_library, no_auth,
+   * auth_expired, invalid_ref, not_found, access_denied, api_error,
+   * network_error, timeout).
    */
   matchAgainstSpotify: (playlistRef: string) => Promise<MatchOutcome>;
+  /**
+   * Match a hand-pasted track list against the cached library index. No
+   * Spotify connection required — the parser handles a handful of common
+   * "Artist - Title" formats (numbered lists, em/en-dash, tab-separated,
+   * `Title by Artist`, bare title).
+   */
+  matchAgainstText: (text: string) => Promise<MatchOutcome>;
 }

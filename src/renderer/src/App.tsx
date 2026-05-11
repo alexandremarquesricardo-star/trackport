@@ -129,7 +129,9 @@ export function App(): JSX.Element {
         state={spotifyMatch.state}
         authState={spotifyAuth.state}
         onClose={spotifyMatch.close}
+        onSetMode={spotifyMatch.setMode}
         onSetRef={spotifyMatch.setRef}
+        onSetText={spotifyMatch.setText}
         onMatch={spotifyMatch.match}
         onConnect={() => void spotifyAuth.connect()}
         onDisconnect={() => void spotifyAuth.disconnect()}

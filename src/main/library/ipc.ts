@@ -2,6 +2,7 @@ import { BrowserWindow, dialog, ipcMain } from "electron";
 import { stat } from "node:fs/promises";
 import { incrementalScan } from "./scanner";
 import { matchAgainstSpotify } from "./match-runner";
+import { matchPlaylist, parseTrackList } from "../../shared/match";
 import type { Library } from "../../shared/library";
 import type { MatchOutcome } from "../../shared/match";
 import type { SpotifyAuthController } from "../spotify/auth-controller";
@@ -12,6 +13,7 @@ export const LIBRARY_ADD = "library:add";
 export const LIBRARY_REMOVE = "library:remove";
 export const LIBRARY_RESCAN = "library:rescan";
 export const LIBRARY_MATCH_AGAINST_SPOTIFY = "library:match-against-spotify";
+export const LIBRARY_MATCH_AGAINST_TEXT = "library:match-against-text";
 
 export function registerLibraryHandlers(
   store: LibraryStore,
@@ -89,6 +91,35 @@ export function registerLibraryHandlers(
         };
       }
       return matchAgainstSpotify(playlistRef, store, spotifyAuth);
+    },
+  );
+
+  ipcMain.handle(
+    LIBRARY_MATCH_AGAINST_TEXT,
+    async (_event, text: unknown): Promise<MatchOutcome> => {
+      // Path C: paste a flat track list. No Spotify auth needed; parser
+      // synthesizes the same metadata shape as Spotify so the matcher
+      // doesn't need to know the difference.
+      if (typeof text !== "string") {
+        return { ok: false, code: "invalid_ref", message: "text must be a string" };
+      }
+      if (text.trim().length === 0) {
+        return { ok: false, code: "invalid_ref", message: "Paste a track list to match" };
+      }
+      const library = store.get();
+      if (!library) {
+        return { ok: false, code: "no_library", message: "No music library is set" };
+      }
+      const tracks = parseTrackList(text);
+      if (tracks.length === 0) {
+        return {
+          ok: false,
+          code: "invalid_ref",
+          message: "Couldn't parse any tracks from that input",
+        };
+      }
+      const result = matchPlaylist(tracks, store.getTracks());
+      return { ok: true, result };
     },
   );
 }

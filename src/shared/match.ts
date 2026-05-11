@@ -323,6 +323,105 @@ export const MATCH_INTERNALS = {
 } as const;
 
 /**
+ * Parse a flat user-pasted track list into the same metadata shape Spotify
+ * returns. Lets the dialog skip the Spotify API entirely when the user
+ * already has the tracks they want to match — recommendation emails,
+ * Reddit posts, hand-typed lists, exports from other apps.
+ *
+ * Recognised line formats (first match wins; whitespace tolerated):
+ *
+ *   "Artist - Title"        → default convention
+ *   "Artist — Title"        → em-dash variant
+ *   "Artist – Title"        → en-dash variant
+ *   "Title by Artist"       → natural-language form
+ *   "1. Artist - Title"     → numbered list (digit + dot/paren/colon)
+ *   "1) Artist - Title"
+ *   "Artist\tTitle"         → tab-separated (some app exports)
+ *   "Title"                 → bare title; artist left empty
+ *
+ * Blank lines and lines starting with `#` (markdown headers / comments)
+ * are dropped. The synthetic `spotifyId` is content-based so React keys
+ * stay stable across re-parses of the same input.
+ */
+export function parseTrackList(text: string): SpotifyTrackMetadata[] {
+  if (!text) return [];
+
+  const out: SpotifyTrackMetadata[] = [];
+  // Dedupe synthetic IDs so the React keylist stays unique when the user
+  // pastes a list with duplicate lines.
+  const seen = new Map<string, number>();
+
+  for (const rawLine of text.split(/\r?\n/)) {
+    const parsed = parseTrackLine(rawLine);
+    if (!parsed) continue;
+    const baseKey = `${parsed.artist} ${parsed.title}`.toLowerCase();
+    const occurrence = seen.get(baseKey) ?? 0;
+    seen.set(baseKey, occurrence + 1);
+    const id = occurrence === 0 ? `pasted:${baseKey}` : `pasted:${baseKey}#${occurrence}`;
+    out.push({
+      spotifyId: id,
+      title: parsed.title,
+      artist: parsed.artist,
+      artists: parsed.artist ? [parsed.artist] : [],
+      album: "",
+      isrc: null,
+      durationMs: 0,
+    });
+  }
+  return out;
+}
+
+interface ParsedLine {
+  artist: string;
+  title: string;
+}
+
+/** Strip numbered-list prefixes like `1.` `1)` `1:` `01 -`. */
+const LIST_PREFIX_PATTERN = /^\s*\d+\s*[.)\]:]\s*/;
+const DASH_SPLIT_PATTERN = /\s+[-–—]\s+/;
+const BY_SPLIT_PATTERN = /\s+by\s+/i;
+
+function parseTrackLine(raw: string): ParsedLine | null {
+  let line = raw.trim();
+  if (!line || line.startsWith("#")) return null;
+
+  // Strip surrounding markdown list markers and quotes.
+  line = line.replace(/^[-*•]\s+/, "").replace(/^"|"$|^'|'$/g, "");
+
+  // Drop numbered-list prefixes ("1. ", "2)", etc.) before splitting so the
+  // number isn't mistaken for the artist half of an "Artist - Title".
+  line = line.replace(LIST_PREFIX_PATTERN, "");
+
+  if (!line) return null;
+
+  // Tab-separated wins if present — some app exports use it.
+  if (line.includes("\t")) {
+    const [first, second] = line.split(/\t+/, 2);
+    if (first && second) return { artist: first.trim(), title: second.trim() };
+  }
+
+  // "Title by Artist" — only match when "by" is surrounded by spaces.
+  const byParts = line.split(BY_SPLIT_PATTERN);
+  if (byParts.length === 2 && byParts[0] && byParts[1]) {
+    return { title: byParts[0].trim(), artist: byParts[1].trim() };
+  }
+
+  // "Artist - Title" with any dash variant. Split on the FIRST occurrence
+  // only — track titles often contain dashes ("Mr. Brightside - Live").
+  const idx = line.search(DASH_SPLIT_PATTERN);
+  if (idx !== -1) {
+    const dashMatch = line.slice(idx).match(DASH_SPLIT_PATTERN);
+    const dashLen = dashMatch ? dashMatch[0].length : 3;
+    const left = line.slice(0, idx).trim();
+    const right = line.slice(idx + dashLen).trim();
+    if (left && right) return { artist: left, title: right };
+  }
+
+  // Bare title — accept it; matcher will compare against title-only.
+  return { artist: "", title: line };
+}
+
+/**
  * Error codes for the `library.matchAgainstSpotify` IPC. Surfaced to the
  * renderer in a discriminated outcome (see `MatchOutcome`) so the UI can
  * branch on `code` without parsing message strings or relying on Electron

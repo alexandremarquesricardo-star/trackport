@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import "./SpotifyMatchDialog.css";
 import { useDialogShortcuts } from "../hooks/useDialogShortcuts";
-import type { MatchDialogState } from "../hooks/useSpotifyMatch";
+import type { MatchDialogState, MatchInputMode } from "../hooks/useSpotifyMatch";
 import type { MatchErrorCode, MatchResult, MissingTrack } from "../../../shared/match";
 import type { SpotifyAuthState } from "../../../shared/spotify";
 
@@ -9,7 +9,9 @@ interface Props {
   state: MatchDialogState;
   authState: SpotifyAuthState;
   onClose: () => void;
+  onSetMode: (mode: MatchInputMode) => void;
   onSetRef: (ref: string) => void;
+  onSetText: (text: string) => void;
   onMatch: () => void;
   onConnect: () => void;
   onDisconnect: () => void;
@@ -19,37 +21,51 @@ export function SpotifyMatchDialog({
   state,
   authState,
   onClose,
+  onSetMode,
   onSetRef,
+  onSetText,
   onMatch,
   onConnect,
   onDisconnect,
 }: Props): JSX.Element | null {
   const containerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const urlInputRef = useRef<HTMLInputElement>(null);
+  const textInputRef = useRef<HTMLTextAreaElement>(null);
 
   const open = state.phase !== "closed";
   const phase = state.phase;
+  const mode = state.phase === "closed" ? "url" : state.mode;
   const connected = authState.phase === "connected";
+  // List mode bypasses Spotify entirely.
+  const inputReady = state.phase === "closed" ? false : mode === "url" ? connected : true;
 
-  // Esc always safe — no destructive operations here.
-  // Enter triggers match when there's a non-empty URL and we're idle or
-  // showing a prior result/error (i.e. the user is iterating). Disabled
-  // when the user isn't connected to Spotify yet.
+  // Esc always safe — no destructive operations here. Enter triggers
+  // match when there's non-empty input and the relevant gate is open.
   const onEscape = open ? onClose : null;
+  const hasInput =
+    state.phase !== "closed" &&
+    (mode === "url" ? state.ref.trim().length > 0 : state.text.trim().length > 0);
   const onEnter =
-    open && connected && phase !== "loading" && phase !== "closed" && state.ref.trim().length > 0
+    open && phase !== "loading" && phase !== "closed" && inputReady && hasInput && mode === "url"
       ? onMatch
       : null;
+  // Note: textarea swallows Enter for newlines; we don't bind Enter for
+  // list mode — user clicks the Match button.
 
-  useDialogShortcuts({ active: open, containerRef, phaseKey: phase, onEscape, onEnter });
+  useDialogShortcuts({
+    active: open,
+    containerRef,
+    phaseKey: `${phase}-${mode}`,
+    onEscape,
+    onEnter,
+  });
 
-  // Autofocus the URL input on first open. The focus-trap in
-  // useDialogShortcuts handles the rest of the cycle.
+  // Autofocus the relevant input when the dialog opens or the mode flips.
   useEffect(() => {
-    if (phase === "idle") {
-      inputRef.current?.focus();
-    }
-  }, [phase]);
+    if (phase !== "idle") return;
+    if (mode === "url") urlInputRef.current?.focus();
+    else textInputRef.current?.focus();
+  }, [phase, mode]);
 
   if (!open) return null;
 
@@ -64,19 +80,20 @@ export function SpotifyMatchDialog({
     >
       <div className="spotify-match" ref={containerRef} onClick={(e) => e.stopPropagation()}>
         <h2 id="spotify-match-title" className="spotify-match__title">
-          Check a Spotify playlist
+          Check a playlist
         </h2>
 
-        {!connected ? (
+        <ModeTabs mode={mode} onChange={onSetMode} />
+
+        {mode === "url" && !connected ? (
           <ConnectView authState={authState} onConnect={onConnect} />
-        ) : (
+        ) : mode === "url" ? (
           <>
             <p className="spotify-match__sub">
-              Paste a playlist link, URI, or ID — including playlists only you can see. We&apos;ll
-              compare its tracks against your library by filename. Tracks themselves never leave
-              your computer.
+              Paste a Spotify playlist link, URI, or ID — including playlists only you can see.
+              We&apos;ll compare its tracks against your library by filename. Tracks themselves
+              never leave your computer.
             </p>
-
             <form
               className="spotify-match__form"
               onSubmit={(e) => {
@@ -85,7 +102,7 @@ export function SpotifyMatchDialog({
               }}
             >
               <input
-                ref={inputRef}
+                ref={urlInputRef}
                 type="text"
                 className="spotify-match__input"
                 placeholder="https://open.spotify.com/playlist/…"
@@ -105,19 +122,58 @@ export function SpotifyMatchDialog({
                 {phase === "loading" ? "Matching…" : "Match"}
               </button>
             </form>
-
-            {phase === "loading" && (
-              <div className="spotify-match__loading" role="status" aria-live="polite">
-                <span className="spotify-match__spinner" aria-hidden="true" />
-                Fetching the playlist and matching against your library…
-              </div>
-            )}
-
-            {phase === "error" && <ErrorView code={state.code} message={state.message} />}
-
-            {phase === "results" && <ResultsView result={state.result} />}
+          </>
+        ) : (
+          <>
+            <p className="spotify-match__sub">
+              Paste one track per line — formats like <code>Artist - Title</code>,{" "}
+              <code>1. Artist - Title</code>, or <code>Title by Artist</code> all work. Nothing
+              leaves your computer.
+            </p>
+            <form
+              className="spotify-match__form spotify-match__form--block"
+              onSubmit={(e) => {
+                e.preventDefault();
+                onMatch();
+              }}
+            >
+              <textarea
+                ref={textInputRef}
+                className="spotify-match__textarea"
+                placeholder={
+                  "The Weeknd - Blinding Lights\nQueen - Bohemian Rhapsody\nAdele - Hello"
+                }
+                value={state.text}
+                onChange={(e) => onSetText(e.target.value)}
+                disabled={phase === "loading"}
+                rows={6}
+                spellCheck={false}
+                autoCorrect="off"
+                autoCapitalize="off"
+              />
+              <button
+                type="submit"
+                className="spotify-match__btn spotify-match__btn--primary"
+                disabled={phase === "loading" || state.text.trim().length === 0}
+              >
+                {phase === "loading" ? "Matching…" : "Match"}
+              </button>
+            </form>
           </>
         )}
+
+        {phase === "loading" && (
+          <div className="spotify-match__loading" role="status" aria-live="polite">
+            <span className="spotify-match__spinner" aria-hidden="true" />
+            {mode === "url"
+              ? "Fetching the playlist and matching against your library…"
+              : "Matching against your library…"}
+          </div>
+        )}
+
+        {phase === "error" && <ErrorView code={state.code} message={state.message} />}
+
+        {phase === "results" && <ResultsView result={state.result} />}
 
         <div className="spotify-match__actions">
           {connected && (
@@ -139,6 +195,37 @@ export function SpotifyMatchDialog({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ModeTabs({
+  mode,
+  onChange,
+}: {
+  mode: MatchInputMode;
+  onChange: (m: MatchInputMode) => void;
+}): JSX.Element {
+  return (
+    <div className="spotify-match__tabs" role="tablist" aria-label="Input mode">
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mode === "url"}
+        className={"spotify-match__tab" + (mode === "url" ? " spotify-match__tab--active" : "")}
+        onClick={() => onChange("url")}
+      >
+        Spotify URL
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={mode === "list"}
+        className={"spotify-match__tab" + (mode === "list" ? " spotify-match__tab--active" : "")}
+        onClick={() => onChange("list")}
+      >
+        Paste track list
+      </button>
     </div>
   );
 }
@@ -172,6 +259,9 @@ function ConnectView({
           <div className="spotify-match__error-msg">{authState.message}</div>
         </div>
       )}
+      <p className="spotify-match__sub spotify-match__sub--quiet">
+        Or switch to <strong>Paste track list</strong> above to match without Spotify.
+      </p>
     </div>
   );
 }
@@ -194,7 +284,7 @@ function titleForError(code: MatchErrorCode): string {
     case "auth_expired":
       return "Spotify session expired — reconnect to continue";
     case "invalid_ref":
-      return "Couldn't read that as a Spotify playlist";
+      return "Couldn't read that input";
     case "not_found":
       return "Playlist not found";
     case "access_denied":
@@ -224,7 +314,7 @@ function ResultsView({ result }: { result: MatchResult }): JSX.Element {
         <div className="spotify-match__summary-sub">
           {missingCount > 0
             ? `${missingCount.toLocaleString()} ${missingCount === 1 ? "track" : "tracks"} missing.`
-            : "Everything in this playlist is in your library."}
+            : "Everything in this list is in your library."}
         </div>
       </div>
 
@@ -254,7 +344,9 @@ function ResultsView({ result }: { result: MatchResult }): JSX.Element {
               >
                 <div className="spotify-match__track">
                   <span className="spotify-match__track-title">{m.spotify.title}</span>
-                  <span className="spotify-match__track-artist"> · {m.spotify.artist}</span>
+                  {m.spotify.artist && (
+                    <span className="spotify-match__track-artist"> · {m.spotify.artist}</span>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -286,7 +378,9 @@ function MissingItem({ missing }: { missing: MissingTrack }): JSX.Element {
     <li className="spotify-match__item spotify-match__item--missing">
       <div className="spotify-match__track">
         <span className="spotify-match__track-title">{missing.spotify.title}</span>
-        <span className="spotify-match__track-artist"> · {missing.spotify.artist}</span>
+        {missing.spotify.artist && (
+          <span className="spotify-match__track-artist"> · {missing.spotify.artist}</span>
+        )}
       </div>
       {showHint && missing.bestCandidate && (
         <div className="spotify-match__hint">

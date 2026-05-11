@@ -4,6 +4,7 @@ import {
   matchPlaylist,
   normalize,
   parseLibraryTrack,
+  parseTrackList,
   scoreMatch,
   tokenSetRatio,
   type LibraryTrackInput,
@@ -320,5 +321,87 @@ describe("matchPlaylist", () => {
     expect(result.missing).toHaveLength(1);
     expect(result.missing[0]?.bestCandidate).toBeNull();
     expect(result.totalLibraryTracks).toBe(0);
+  });
+});
+
+describe("parseTrackList", () => {
+  it("parses 'Artist - Title' lines", () => {
+    const parsed = parseTrackList("The Weeknd - Blinding Lights\nQueen - Bohemian Rhapsody");
+    expect(parsed).toHaveLength(2);
+    expect(parsed[0]).toMatchObject({ artist: "The Weeknd", title: "Blinding Lights" });
+    expect(parsed[1]).toMatchObject({ artist: "Queen", title: "Bohemian Rhapsody" });
+  });
+
+  it("tolerates em- and en-dash separators", () => {
+    const parsed = parseTrackList("Adele — Hello\nAdele – Rolling in the Deep");
+    expect(parsed[0]?.artist).toBe("Adele");
+    expect(parsed[0]?.title).toBe("Hello");
+    expect(parsed[1]?.artist).toBe("Adele");
+    expect(parsed[1]?.title).toBe("Rolling in the Deep");
+  });
+
+  it("recognises 'Title by Artist' natural-language form", () => {
+    const parsed = parseTrackList("Yesterday by The Beatles");
+    expect(parsed[0]).toMatchObject({ title: "Yesterday", artist: "The Beatles" });
+  });
+
+  it("strips numbered-list prefixes", () => {
+    const parsed = parseTrackList(
+      "1. Queen - Bohemian Rhapsody\n2) Adele - Hello\n3: Drake - Hotline Bling",
+    );
+    expect(parsed).toHaveLength(3);
+    expect(parsed[0]).toMatchObject({ artist: "Queen", title: "Bohemian Rhapsody" });
+    expect(parsed[1]).toMatchObject({ artist: "Adele", title: "Hello" });
+    expect(parsed[2]).toMatchObject({ artist: "Drake", title: "Hotline Bling" });
+  });
+
+  it("parses tab-separated lines", () => {
+    const parsed = parseTrackList("The Beatles\tYesterday");
+    expect(parsed[0]).toMatchObject({ artist: "The Beatles", title: "Yesterday" });
+  });
+
+  it("accepts bare titles when no separator is present", () => {
+    const parsed = parseTrackList("Imagine\nBohemian Rhapsody");
+    expect(parsed).toHaveLength(2);
+    expect(parsed[0]).toMatchObject({ artist: "", title: "Imagine" });
+    expect(parsed[1]).toMatchObject({ artist: "", title: "Bohemian Rhapsody" });
+  });
+
+  it("only splits on the first dash so titles with dashes stay intact", () => {
+    const parsed = parseTrackList("The Killers - Mr. Brightside - Live");
+    expect(parsed[0]).toMatchObject({
+      artist: "The Killers",
+      title: "Mr. Brightside - Live",
+    });
+  });
+
+  it("drops blank lines and comment lines starting with #", () => {
+    const parsed = parseTrackList("# My playlist\n\nQueen - Bohemian Rhapsody\n\n# end");
+    expect(parsed).toHaveLength(1);
+    expect(parsed[0]?.title).toBe("Bohemian Rhapsody");
+  });
+
+  it("strips markdown bullet markers and surrounding quotes", () => {
+    const parsed = parseTrackList(
+      '- Queen - Bohemian Rhapsody\n* Adele - Hello\n• Drake - Hotline Bling\n"The Beatles - Yesterday"',
+    );
+    expect(parsed).toHaveLength(4);
+    expect(parsed.map((p) => p.artist)).toEqual(["Queen", "Adele", "Drake", "The Beatles"]);
+  });
+
+  it("returns an empty array on empty input", () => {
+    expect(parseTrackList("")).toEqual([]);
+    expect(parseTrackList("   \n   \n")).toEqual([]);
+  });
+
+  it("synthesises unique IDs for duplicate lines", () => {
+    const parsed = parseTrackList("Queen - Bohemian Rhapsody\nQueen - Bohemian Rhapsody");
+    expect(parsed[0]?.spotifyId).not.toBe(parsed[1]?.spotifyId);
+  });
+
+  it("synthesises stable IDs across re-parses of the same input", () => {
+    const a = parseTrackList("Queen - Bohemian Rhapsody");
+    const b = parseTrackList("Queen - Bohemian Rhapsody");
+    expect(a[0]?.spotifyId).toBe(b[0]?.spotifyId);
   });
 });

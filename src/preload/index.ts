@@ -24,6 +24,7 @@ const LIBRARY_ADD = "library:add";
 const LIBRARY_REMOVE = "library:remove";
 const LIBRARY_RESCAN = "library:rescan";
 const LIBRARY_MATCH_AGAINST_SPOTIFY = "library:match-against-spotify";
+const LIBRARY_MATCH_AGAINST_TEXT = "library:match-against-text";
 const UPDATER_GET_STATE = "updater:get-state";
 const UPDATER_DOWNLOAD = "updater:download";
 const UPDATER_QUIT_AND_INSTALL = "updater:quit-and-install";
@@ -77,6 +78,8 @@ const api: TrackPortApi = {
     rescan: () => ipcRenderer.invoke(LIBRARY_RESCAN) as Promise<Library | null>,
     matchAgainstSpotify: (playlistRef: string) =>
       ipcRenderer.invoke(LIBRARY_MATCH_AGAINST_SPOTIFY, playlistRef) as Promise<MatchOutcome>,
+    matchAgainstText: (text: string) =>
+      ipcRenderer.invoke(LIBRARY_MATCH_AGAINST_TEXT, text) as Promise<MatchOutcome>,
   },
   files: {
     // webUtils.getPathForFile is the supported way to extract a filesystem
