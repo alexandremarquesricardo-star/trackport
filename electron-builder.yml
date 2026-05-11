@@ -51,7 +51,11 @@ nsis:
 mac:
   target:
     - target: dmg
-      arch: [arm64, x64]
+      # Single universal binary. Larger DMG (~140 MB vs ~95 MB per arch)
+      # in exchange for one download asset that runs on every supported
+      # Mac — no UA-based arch sniffing on the site, no chance of an
+      # Intel user installing the arm64 build by mistake.
+      arch: [universal]
   icon: build/icon.png
   category: public.app-category.music
   # Hardened runtime is required for notarization on macOS 10.14.5+.
