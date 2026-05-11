@@ -69,6 +69,15 @@ jobs:
           npm test
           npm run typecheck
 
+      - name: Bundle app (electron-vite)
+        # Produces out/main/index.js + out/preload/* + out/renderer/* —
+        # the files electron-builder packages into app.asar. Without this,
+        # electron-builder fails the sanity check after building the
+        # unpacked tree. Typecheck already ran in the previous step, so
+        # we call electron-vite directly instead of `npm run build`
+        # (which would re-typecheck).
+        run: npx electron-vite build
+
       - name: Build + publish Windows installer
         # `electron-builder --publish always` builds the NSIS installer,
         # generates the latest.yml + .blockmap auto-update sidecars, and
@@ -127,6 +136,11 @@ jobs:
           npm run format:check
           npm test
           npm run typecheck
+
+      - name: Bundle app (electron-vite)
+        # See the matching step in the Windows job. Produces the out/
+        # tree electron-builder packages into the .app bundle.
+        run: npx electron-vite build
 
       - name: Build + publish macOS DMG
         # Universal arm64 + x64 DMG per electron-builder.yml, plus the
