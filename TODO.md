@@ -7,7 +7,7 @@
 
 ## Where we are
 
-**Status:** v0.1.0 shipped — Win NSIS + Mac universal DMG live on GitHub Releases, trackport.app download buttons auto-fill from the GitHub API. 35 commits on `main`. Spotify matcher arc 3/4 complete: backend has the playlist track fetcher AND the desktop app has the pure filename-based matcher with full IPC wiring. Only the UI integration in iteration 4 is left.
+**Status:** v0.1.0 shipped — Win NSIS + Mac universal DMG live on GitHub Releases, trackport.app download buttons auto-fill from the GitHub API. 36 commits on `main`. **Spotify matcher arc 4/4 complete** — the wedge feature ships in the next release: user pastes a Spotify playlist link, sees what's matched and missing against their library, with "did you mean?" hints on near-misses. Acting on matched tracks (copy to device) is the natural next iteration but not strictly part of the matcher arc.
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -51,6 +51,7 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 33  | `c34f37e`             | CI: unset empty signing env vars so unsigned builds succeed                      |
 | 34  | `5a7e020`             | Mac: ship a single universal DMG instead of two arch-specific ones               |
 | 35  | `fbf9568`             | Library: match Spotify playlist against the local index (matcher + IPC + tests)  |
+| 36  | `70daaee`             | Paste-a-Spotify-playlist dialog — UI wired to the matcher                        |
 
 ### What works today
 
@@ -151,9 +152,19 @@ Roughly 3-4 iterations:
    suffixes, smart quotes), parsing (flat vs nested layouts, em/en-dash
    separators, track-number prefixes), scoring under common drift, and
    end-to-end match against a small library.
-4. UI integration in the dialog flow — paste playlist URL → see
-   `matched` / `missing` track lists with "did you mean?" hints from
-   `bestCandidate` for near-miss missing tracks.
+4. ✅ **UI integration** — `useSpotifyMatch` hook (closed → idle → loading
+   → results | error) plus `SpotifyMatchDialog` component. Entry point is
+   a "Check Spotify playlist…" accent button in the library section (only
+   when a library is set). Results show summary headline, missing list
+   (open by default, with score-gated "did you mean?" hints to
+   `bestCandidate` ≥ 0.5), and matched list (closed by default, with
+   reveal-in-file-manager links). Errors map `MatchErrorCode` →
+   human-readable titles, broker's message shown verbatim underneath.
+   Same modal patterns as `SyncDialog` — backdrop, focus trap via
+   `useDialogShortcuts`, aria-live for the loading state. The whole
+   matcher arc now closes from "paste a URL" all the way to "see what's
+   matched"; only the act-on-matches piece is left, and that's a
+   separate concern (planner needs to accept a curated file list).
 
 ### 2. ✅ Download website at trackport.app
 
@@ -244,6 +255,11 @@ then, just a GitHub Sponsors / "Buy me a coffee" footer link is fine
 
 ## Parking lot (good ideas, not now)
 
+- **Sync matched-Spotify tracks to device** — wire the matcher's
+  `matched` list into the sync planner. Needs `buildPlan` to accept a
+  curated file list as an alternative to a `sourceFolder`. Closes the
+  loop on the wedge: paste playlist URL → confirm matches → copy to
+  device, all in one flow.
 - Multi-root libraries (`~/Music` + external drive)
 - Drag-to-reorder in preflight (manual override of natural sort)
 - Sort by ID3 track number / album metadata
