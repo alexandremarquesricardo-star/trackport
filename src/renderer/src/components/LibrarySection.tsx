@@ -8,6 +8,7 @@ interface Props {
   onAdd: () => void;
   onRescan: () => void;
   onRemove: () => void;
+  onMatchSpotify: () => void;
 }
 
 export function LibrarySection({
@@ -17,6 +18,7 @@ export function LibrarySection({
   onAdd,
   onRescan,
   onRemove,
+  onMatchSpotify,
 }: Props): JSX.Element | null {
   if (loading) return null;
 
@@ -66,6 +68,15 @@ export function LibrarySection({
         </div>
       </div>
       <div className="library__actions">
+        <button
+          className="library__btn library__btn--accent"
+          type="button"
+          onClick={onMatchSpotify}
+          disabled={busy}
+          title="Paste a Spotify playlist URL — see what's missing from your library"
+        >
+          Check Spotify playlist…
+        </button>
         <button className="library__btn" type="button" onClick={onRescan} disabled={busy}>
           {busy ? "Working…" : "Re-scan"}
         </button>

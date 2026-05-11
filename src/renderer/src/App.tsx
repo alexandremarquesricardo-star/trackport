@@ -4,11 +4,13 @@ import { useDevices } from "./hooks/useDevices";
 import { useDeviceProfile } from "./hooks/useDeviceProfile";
 import { useFolderDrop } from "./hooks/useFolderDrop";
 import { useLibrary } from "./hooks/useLibrary";
+import { useSpotifyMatch } from "./hooks/useSpotifyMatch";
 import { useSync } from "./hooks/useSync";
 import { useUpdater } from "./hooks/useUpdater";
 import { BrandMark } from "./components/BrandMark";
 import { LibraryDropOverlay } from "./components/LibraryDropOverlay";
 import { LibrarySection } from "./components/LibrarySection";
+import { SpotifyMatchDialog } from "./components/SpotifyMatchDialog";
 import { SyncDialog } from "./components/SyncDialog";
 import { UpdateBanner } from "./components/UpdateBanner";
 import type { Device } from "../../shared/devices";
@@ -22,6 +24,7 @@ export function App(): JSX.Element {
   const lib = useLibrary();
   const sync = useSync();
   const updater = useUpdater();
+  const spotifyMatch = useSpotifyMatch();
   const [flash, setFlash] = useState<string | null>(null);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -78,6 +81,7 @@ export function App(): JSX.Element {
           onAdd={lib.add}
           onRescan={lib.rescan}
           onRemove={lib.remove}
+          onMatchSpotify={spotifyMatch.open}
         />
 
         <div className="app__devices" aria-live="polite">
@@ -117,6 +121,13 @@ export function App(): JSX.Element {
         onClose={sync.close}
         onApplyFit={sync.applyFit}
         onSetWipeDevice={sync.setWipeDevice}
+      />
+
+      <SpotifyMatchDialog
+        state={spotifyMatch.state}
+        onClose={spotifyMatch.close}
+        onSetRef={spotifyMatch.setRef}
+        onMatch={spotifyMatch.match}
       />
 
       <UpdateBanner

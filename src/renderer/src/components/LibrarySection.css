@@ -135,3 +135,17 @@
   border-color: rgba(248, 113, 113, 0.3);
   color: #fca5a5;
 }
+
+/* Accent variant — used for the "Check Spotify playlist" entry point.
+   Visually distinct from the destructive ghost (red) and the neutral
+   default; signals "this is a feature action", not a destructive one. */
+.library__btn--accent {
+  border-color: rgba(91, 140, 255, 0.35);
+  color: #c7d2fe;
+}
+
+.library__btn--accent:hover:not(:disabled) {
+  background: rgba(91, 140, 255, 0.12);
+  border-color: rgba(91, 140, 255, 0.55);
+  color: #e6ebff;
+}
