@@ -7,7 +7,7 @@
 
 ## Where we are
 
-**Status:** v0.1.0 — local Electron app, 30 commits on `main`, CI green, **Windows + macOS distribution complete**, working end-to-end on Windows. Spotify backend now has the playlist track fetcher (iteration 2 of 4). Landing site SEO-instrumented.
+**Status:** v0.1.0 shipped — Win NSIS + Mac universal DMG live on GitHub Releases, trackport.app download buttons auto-fill from the GitHub API. 35 commits on `main`. Spotify matcher arc 3/4 complete: backend has the playlist track fetcher AND the desktop app has the pure filename-based matcher with full IPC wiring. Only the UI integration in iteration 4 is left.
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -46,6 +46,11 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 28  | `9d6de8f`             | Spotify token broker on Railway + landing site `trackport.app`                   |
 | 29  | `43fd0be`             | Spotify `/spotify/playlist` endpoint — parse ref, paginate, normalize tracks     |
 | 30  | `0ebe629`             | SEO pass — OG, Twitter Card, JSON-LD SoftwareApplication, robots, sitemap        |
+| 31  | `15f1268`             | CI: pin Python 3.11 so node-gyp postinstall survives                             |
+| 32  | `8d7b6bb`             | CI: run electron-vite build before electron-builder                              |
+| 33  | `c34f37e`             | CI: unset empty signing env vars so unsigned builds succeed                      |
+| 34  | `5a7e020`             | Mac: ship a single universal DMG instead of two arch-specific ones               |
+| 35  | `fbf9568`             | Library: match Spotify playlist against the local index (matcher + IPC + tests)  |
 
 ### What works today
 
@@ -61,6 +66,12 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
   returns normalized `{ title, artist, artists[], album, isrc, durationMs }`
   for any public playlist (web URL / URI / raw ID); pagination + 429 retry +
   null-track filtering all handled server-side
+- Desktop app has `library.matchAgainstSpotify(playlistRef)` — fetches via
+  the broker, runs a pure filename-based fuzzy matcher (token-set ratio over
+  normalized title + artist, threshold 0.78) against the cached library
+  index, returns `{ matched, missing }` with best-near-miss hints. No ID3
+  parsing required — pattern-recognises `Artist - Title.mp3` flat layouts
+  and `Artist/Album/NN - Title.mp3` nested ones
 - Caches the library track index (paths + sizes + mtimes) and reuses it on
   every sync — only re-stats files in directories whose mtime moved
 - "Clear device first" toggle in preflight, default ON for transmission-time
@@ -71,9 +82,9 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 - Top-level React error boundary recovers a renderer crash with a Reload action
   instead of a black window
 - Vitest unit tests covering the smart-fit logic, natural-sort behaviour,
-  window-bounds validation, the incremental library scanner, and the
-  auto-update state reducer (53 tests total, including filesystem-fixture
-  tests for the dir-mtime cache hit path)
+  window-bounds validation, the incremental library scanner, the
+  auto-update state reducer, and the Spotify matcher (85 tests total,
+  including filesystem-fixture tests for the dir-mtime cache hit path)
 - Window state (size, position, maximized) persists across launches; saved
   bounds get validated against the current monitor layout so an unplugged
   display can't strand the window off-screen
@@ -126,11 +137,23 @@ Roughly 3-4 iterations:
    403 access_denied, 502 spotify*\*, 400 invalid_ref. Hard cap at 10 000
    tracks (Spotify's own playlist limit). Implemented in
    [`server/src/playlist.ts`](server/src/playlist.ts).
-3. Local library matcher (artist/title fuzzy match) — runs in the desktop app
-   against the cached library index; produces `{ matched, missing }`. Needs a
-   new IPC channel `library.matchAgainstSpotify(playlistUrl)` in the main
-   process that proxies to the broker and runs the fuzzy match locally.
-4. UI integration in the dialog flow.
+3. ✅ **Local library matcher** — `src/shared/match.ts` is the pure logic
+   (normalize → token-set ratio → score with title weight 0.75, artist 0.25
+   → threshold 0.78). `src/main/library/match-runner.ts` orchestrates the
+   broker call (30s AbortController timeout) and feeds the cached library
+   index into the matcher. New IPC channel `library:match-against-spotify`
+   wired through `LibraryApi.matchAgainstSpotify(playlistRef)`. Returns a
+   discriminated `MatchOutcome` (`{ ok, code, message }` for failures,
+   `{ ok, result: { matched, missing, totalSpotifyTracks, totalLibraryTracks } }`
+   for success) so the renderer can branch on `code` without relying on
+   Electron preserving error subclasses. 32 new unit tests covering
+   normalization edge cases (diacritics, parenthetical noise, featuring
+   suffixes, smart quotes), parsing (flat vs nested layouts, em/en-dash
+   separators, track-number prefixes), scoring under common drift, and
+   end-to-end match against a small library.
+4. UI integration in the dialog flow — paste playlist URL → see
+   `matched` / `missing` track lists with "did you mean?" hints from
+   `bestCandidate` for near-miss missing tracks.
 
 ### 2. ✅ Download website at trackport.app
 
