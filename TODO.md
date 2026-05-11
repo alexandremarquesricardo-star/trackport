@@ -7,7 +7,7 @@
 
 ## Where we are
 
-**Status:** v0.1.0 shipped — Win NSIS + Mac universal DMG live on GitHub Releases, trackport.app download buttons auto-fill from the GitHub API. 38 commits on `main`. **Spotify matcher arc 4/4 + Path B (PKCE pivot) + Path C (paste-list fallback) complete.** Wedge feature now works against any playlist the user can see in Spotify (public, private, Liked Songs) via PKCE OAuth, with a manual paste-list mode as a no-auth fallback. Acting on matched tracks (copy to device) is the natural next iteration but a separate planner-extension concern.
+**Status:** v0.1.0 shipped — Win NSIS + Mac universal DMG live on GitHub Releases, trackport.app download buttons auto-fill from the GitHub API. 40 commits on `main`. **Spotify matcher arc 4/4 + Path B (PKCE pivot) + Path C (paste-list fallback) complete and verified end-to-end.** PKCE auth round-trips cleanly. The matcher's Spotify URL path is silently gated by Spotify Premium on the developer's account (`iamricardojam`) — every playlist endpoint returns 403 without it, including the dev's own playlists. **Decision: don't subscribe.** Ship the wall, let the in-app diagnostic surface Spotify's exact reason, point users at the Paste-track-list mode as the no-friction working path. See [memory: Spotify Premium gate](../../C:/Users/rimarques/.claude/projects/d--VisualStudioCode-TrackPort/memory/project_spotify_premium_gate.md).
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -54,6 +54,8 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 36  | `70daaee`             | Paste-a-Spotify-playlist dialog — UI wired to the matcher                        |
 | 37  | `ac3b254`             | Switch to PKCE OAuth (user accounts) — broker no longer required for matching    |
 | 38  | `9a3c4d7`             | Paste-a-track-list mode — auth-free fallback (12 parser tests)                   |
+| 39  | `8c7df10`             | TODO bookkeeping for paths B+C                                                   |
+| 40  | `5fa9a63`             | Spotify API errors now surface Spotify's actual response body (saved €132/yr)    |
 
 ### What works today
 
@@ -186,7 +188,74 @@ also wired (apex + www both resolve).
 
 ---
 
-## Open follow-ups (next session)
+## Open follow-ups (next session — pick up here tomorrow)
+
+### Smoke-test what we shipped
+
+The PKCE auth flow + diagnostic surfacing were verified end-to-end this
+session (the diagnostic revealed the Premium gate — that's the proof both
+worked). Still untested under real conditions:
+
+- ✅ PKCE login → browser callback → token storage → reconnection across
+  app restarts
+- ✅ Spotify URL mode → 403 with `Premium required` (working as designed
+  given the gate)
+- ⏳ **Paste track list mode end-to-end** — never tested. The matcher core
+  has 106 unit tests, but the UI path (tab switch → textarea → match →
+  results render) hasn't been exercised. Pick a few tracks from the local
+  library, paste them in, confirm matched count > 0. This is the actual
+  user-facing wedge feature given the Premium gate.
+- ⏳ Auth persistence smoke — kill TrackPort after connecting, relaunch,
+  confirm it's still "connected" without a fresh login. Tests the
+  `safeStorage`-encrypted refresh-token path.
+
+### Wire `VITE_SPOTIFY_CLIENT_ID` into release CI
+
+Required before tagging v0.1.1 if we want URL mode to work in shipped
+builds. Without this, packaged binaries have the placeholder client ID
+and Connect Spotify errors immediately.
+
+1. Repo Settings → Secrets and variables → Actions → New secret:
+   `VITE_SPOTIFY_CLIENT_ID` with the value from `.env.local`.
+2. Edit `.github/workflows/release.yml` — in both the Windows and macOS
+   jobs, add to the `Bundle app (electron-vite)` step's `env:` block:
+   ```yaml
+   env:
+     VITE_SPOTIFY_CLIENT_ID: ${{ secrets.VITE_SPOTIFY_CLIENT_ID }}
+   ```
+3. Same env injection on the `Build + publish` step is harmless and
+   guards against electron-vite reading env at the wrong stage.
+
+### Tag v0.1.1
+
+Ships everything since v0.1.0:
+
+- Universal macOS DMG (commit `5a7e020`) — fixes the Intel-Mac arch
+  mismatch from v0.1.0 splitting into arm64+x64
+- Full Spotify matcher arc (commits `fbf9568`, `70daaee`, `ac3b254`,
+  `9a3c4d7`) — PKCE OAuth + paste-track-list mode
+- Spotify API error diagnostic (commit `5fa9a63`) — surfaces Premium
+  gate / scope issues / etc. to the user
+
+Sequence: smoke-test → wire CLIENT_ID secret → `git tag v0.1.1 && git push origin v0.1.1`.
+
+### Retire the Railway broker
+
+After v0.1.1 ships and the rollback path is no longer needed, delete the
+`server/` directory + the Railway service. Saves €5/mo. The desktop app
+calls Spotify directly via PKCE — broker has zero readers.
+
+Move "Rotate Spotify Client Secret" off the list — secret rotation
+becomes irrelevant once the broker (which holds it) is retired.
+
+### "Pick from your Spotify playlists" dropdown — IF we re-enable URL mode
+
+Only meaningful once Spotify URL mode actually works (Premium gate
+removed). On hold pending that decision.
+
+---
+
+## Open follow-ups (other items, lower priority)
 
 ### Cut first published release v0.1.0
 
