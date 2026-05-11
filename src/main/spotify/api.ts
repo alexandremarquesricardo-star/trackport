@@ -133,6 +133,18 @@ function buildInitialUrl(playlistId: string): string {
   return `${API_BASE}/playlists/${playlistId}/tracks?${params.toString()}`;
 }
 
+/** Pull the human-readable message out of Spotify's standard error envelope. */
+function extractSpotifyMessage(rawBody: string): string {
+  if (!rawBody) return "";
+  try {
+    const parsed = JSON.parse(rawBody) as { error?: { message?: string } | string };
+    if (typeof parsed.error === "string") return parsed.error;
+    return parsed.error?.message ?? "";
+  } catch {
+    return "";
+  }
+}
+
 function normalizeItem(item: SpotifyPlaylistItem): SpotifyTrackMetadata | null {
   const t = item.track;
   if (!t || t.type !== "track" || !t.id) return null;
@@ -163,22 +175,39 @@ export async function fetchPlaylistTracks(
   while (url && pages < MAX_PAGES) {
     const res: Response = await fetchAuthed(url, auth);
 
-    if (res.status === 404) {
-      throw new SpotifyApiError("not_found", 404, `Playlist not found: ${playlistId}`);
-    }
-    if (res.status === 403) {
-      throw new SpotifyApiError(
-        "access_denied",
-        403,
-        `Spotify denied access to playlist ${playlistId}`,
-      );
-    }
     if (!res.ok) {
-      const text = await res.text().catch(() => "");
+      const rawBody = await res.text().catch(() => "");
+      const spotifyMessage = extractSpotifyMessage(rawBody);
+      // Always carry SOMETHING diagnostic into the user-visible message —
+      // Spotify's JSON message if parseable, otherwise a truncated body.
+      const diagnostic =
+        spotifyMessage || (rawBody ? `body: ${rawBody.slice(0, 200)}` : "(no body)");
+
+      // Also log to the dev terminal so it's visible even before we
+      // surface it cleanly in the UI. Includes full headers info that
+      // helps distinguish scope/quota errors from real "not found".
+      console.error(
+        `[Spotify API] ${res.status} on ${url}\n  body: ${rawBody.slice(0, 500)}\n  www-authenticate: ${res.headers.get("www-authenticate") ?? "(none)"}`,
+      );
+
+      if (res.status === 404) {
+        throw new SpotifyApiError(
+          "not_found",
+          404,
+          `Playlist not found: ${playlistId} — ${diagnostic}`,
+        );
+      }
+      if (res.status === 403) {
+        throw new SpotifyApiError(
+          "access_denied",
+          403,
+          `Spotify denied access to ${playlistId} — ${diagnostic}`,
+        );
+      }
       throw new SpotifyApiError(
         "api_error",
         res.status,
-        `Spotify API error (${res.status}): ${text.slice(0, 200)}`,
+        `Spotify API error ${res.status} — ${diagnostic}`,
       );
     }
 
