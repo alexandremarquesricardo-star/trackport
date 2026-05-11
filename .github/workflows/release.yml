@@ -84,7 +84,17 @@ jobs:
         # uploads everything to a draft GitHub Release for this tag.
         # GH_TOKEN is the standard secret — the default GITHUB_TOKEN has
         # the `contents: write` permission granted above.
-        run: npx electron-builder --win --publish always
+        #
+        # The guard at the top of the script unsets WIN_CSC_* when the
+        # corresponding secrets aren't configured. GitHub Actions resolves
+        # an unset secret to "" (empty string), and electron-builder treats
+        # an empty WIN_CSC_LINK as a path and fails the build instead of
+        # falling back to unsigned. Unsetting restores the "no secret = no
+        # signing" intent.
+        run: |
+          if (-not $env:WIN_CSC_LINK)         { Remove-Item Env:WIN_CSC_LINK         -ErrorAction SilentlyContinue }
+          if (-not $env:WIN_CSC_KEY_PASSWORD) { Remove-Item Env:WIN_CSC_KEY_PASSWORD -ErrorAction SilentlyContinue }
+          npx electron-builder --win --publish always
         env:
           # Code signing is opt-in. Set these in the repo's Actions
           # secrets to enable Authenticode signing of the installer:
@@ -148,7 +158,21 @@ jobs:
         # runtime is already on in electron-builder.yml; notarization
         # auto-engages when the APPLE_* env vars are set, otherwise the
         # DMG ships unsigned (Gatekeeper warning at first open).
-        run: npx electron-builder --mac --publish always
+        #
+        # The guard at the top unsets CSC_*/APPLE_* when the matching
+        # secret isn't configured. GitHub Actions resolves an unset secret
+        # to "" (empty string); electron-builder treats an empty CSC_LINK
+        # as a path-to-cert and fails with "/Users/runner/work/... not a
+        # file" instead of falling back to unsigned. Unsetting restores
+        # the "no secret = no signing" intent.
+        shell: bash
+        run: |
+          [ -z "$CSC_LINK" ] && unset CSC_LINK
+          [ -z "$CSC_KEY_PASSWORD" ] && unset CSC_KEY_PASSWORD
+          [ -z "$APPLE_ID" ] && unset APPLE_ID
+          [ -z "$APPLE_APP_SPECIFIC_PASSWORD" ] && unset APPLE_APP_SPECIFIC_PASSWORD
+          [ -z "$APPLE_TEAM_ID" ] && unset APPLE_TEAM_ID
+          npx electron-builder --mac --publish always
         env:
           # Apple Developer ID code signing — opt-in via secrets:
           #   CSC_LINK            — base64 of your .p12 OR a URL
