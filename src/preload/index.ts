@@ -4,6 +4,7 @@ import type { TrackPortApi } from "../shared/api";
 import type { FitStrategyId } from "../shared/fit";
 import type { Library } from "../shared/library";
 import type { MatchOutcome } from "../shared/match";
+import type { SpotifyAuthState } from "../shared/spotify";
 import type { SyncPlan, SyncPlanId, SyncProgress } from "../shared/sync";
 import type { UpdateState } from "../shared/updater";
 
@@ -27,6 +28,10 @@ const UPDATER_GET_STATE = "updater:get-state";
 const UPDATER_DOWNLOAD = "updater:download";
 const UPDATER_QUIT_AND_INSTALL = "updater:quit-and-install";
 const UPDATER_STATE_EVENT = "updater:state";
+const SPOTIFY_AUTH_GET_STATE = "spotify-auth:get-state";
+const SPOTIFY_AUTH_CONNECT = "spotify-auth:connect";
+const SPOTIFY_AUTH_DISCONNECT = "spotify-auth:disconnect";
+const SPOTIFY_AUTH_STATE_EVENT = "spotify-auth:state";
 
 const api: TrackPortApi = {
   appVersion: "0.1.0",
@@ -92,6 +97,19 @@ const api: TrackPortApi = {
     },
     downloadUpdate: () => ipcRenderer.invoke(UPDATER_DOWNLOAD) as Promise<void>,
     quitAndInstall: () => ipcRenderer.invoke(UPDATER_QUIT_AND_INSTALL) as Promise<void>,
+  },
+  spotifyAuth: {
+    getState: () => ipcRenderer.invoke(SPOTIFY_AUTH_GET_STATE) as Promise<SpotifyAuthState>,
+    connect: () => ipcRenderer.invoke(SPOTIFY_AUTH_CONNECT) as Promise<SpotifyAuthState>,
+    disconnect: () => ipcRenderer.invoke(SPOTIFY_AUTH_DISCONNECT) as Promise<void>,
+    onChange: (cb) => {
+      const handler = (_event: Electron.IpcRendererEvent, state: SpotifyAuthState): void =>
+        cb(state);
+      ipcRenderer.on(SPOTIFY_AUTH_STATE_EVENT, handler);
+      return () => {
+        ipcRenderer.removeListener(SPOTIFY_AUTH_STATE_EVENT, handler);
+      };
+    },
   },
 };
 

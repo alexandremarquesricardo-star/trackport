@@ -4,6 +4,7 @@ import { incrementalScan } from "./scanner";
 import { matchAgainstSpotify } from "./match-runner";
 import type { Library } from "../../shared/library";
 import type { MatchOutcome } from "../../shared/match";
+import type { SpotifyAuthController } from "../spotify/auth-controller";
 import type { LibraryStore } from "./store";
 
 export const LIBRARY_GET = "library:get";
@@ -12,7 +13,10 @@ export const LIBRARY_REMOVE = "library:remove";
 export const LIBRARY_RESCAN = "library:rescan";
 export const LIBRARY_MATCH_AGAINST_SPOTIFY = "library:match-against-spotify";
 
-export function registerLibraryHandlers(store: LibraryStore): void {
+export function registerLibraryHandlers(
+  store: LibraryStore,
+  spotifyAuth: SpotifyAuthController,
+): void {
   ipcMain.handle(LIBRARY_GET, async (): Promise<Library | null> => store.get());
 
   ipcMain.handle(
@@ -84,7 +88,7 @@ export function registerLibraryHandlers(store: LibraryStore): void {
           message: "playlistRef must be a string",
         };
       }
-      return matchAgainstSpotify(playlistRef, store);
+      return matchAgainstSpotify(playlistRef, store, spotifyAuth);
     },
   );
 }

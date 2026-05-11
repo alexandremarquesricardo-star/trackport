@@ -1,6 +1,7 @@
 import type { DevicesApi } from "./devices";
 import type { LibraryApi } from "./library";
 import type { PreferencesApi } from "./preferences";
+import type { SpotifyAuthApi } from "./spotify";
 import type { SyncApi } from "./sync";
 import type { UpdaterApi } from "./updater";
 
@@ -35,4 +36,5 @@ export interface TrackPortApi {
   library: LibraryApi;
   files: FilesApi;
   updater: UpdaterApi;
+  spotifyAuth: SpotifyAuthApi;
 }

@@ -8,6 +8,8 @@ import { incrementalScan, tracksToAudioFiles } from "./library/scanner";
 import { buildAppMenu, configureAboutPanel } from "./menu";
 import { PreferencesStore } from "./preferences/store";
 import { registerPreferencesHandlers } from "./preferences/ipc";
+import { SpotifyAuthController } from "./spotify/auth-controller";
+import { bindSpotifyAuthEvents, registerSpotifyAuthHandlers } from "./spotify/ipc";
 import { scanAudioFiles } from "./sync/audio-scan";
 import { bindSyncEventsToWindow, registerSyncHandlers } from "./sync/ipc";
 import { UpdaterController } from "./updater/controller";
@@ -19,6 +21,7 @@ const detector = new DeviceDetector();
 const preferences = new PreferencesStore();
 const library = new LibraryStore();
 const updater = new UpdaterController();
+const spotifyAuth = new SpotifyAuthController();
 
 // In dev the icon lives next to the source tree; in packaged builds it's
 // shipped via `extraResources` in electron-builder.yml. Linux relies on this
@@ -159,13 +162,15 @@ app.whenReady().then(async () => {
   configureAboutPanel();
   Menu.setApplicationMenu(buildAppMenu());
 
-  await Promise.all([preferences.load(), library.load()]);
+  await Promise.all([preferences.load(), library.load(), spotifyAuth.init()]);
 
   registerDeviceHandlers(detector);
   registerPreferencesHandlers(preferences);
-  registerLibraryHandlers(library);
+  registerLibraryHandlers(library, spotifyAuth);
   registerSyncHandlers({ resolveTracks: makeResolveTracks(library) });
   registerUpdaterHandlers(updater);
+  registerSpotifyAuthHandlers(spotifyAuth);
+  bindSpotifyAuthEvents(spotifyAuth);
   registerShellHandlers();
   // Kicks off a delayed first check via setTimeout — never blocks startup.
   // No-op in dev (electron-updater can't actually check unsigned dev runs).

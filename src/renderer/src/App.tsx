@@ -4,6 +4,7 @@ import { useDevices } from "./hooks/useDevices";
 import { useDeviceProfile } from "./hooks/useDeviceProfile";
 import { useFolderDrop } from "./hooks/useFolderDrop";
 import { useLibrary } from "./hooks/useLibrary";
+import { useSpotifyAuth } from "./hooks/useSpotifyAuth";
 import { useSpotifyMatch } from "./hooks/useSpotifyMatch";
 import { useSync } from "./hooks/useSync";
 import { useUpdater } from "./hooks/useUpdater";
@@ -24,6 +25,7 @@ export function App(): JSX.Element {
   const lib = useLibrary();
   const sync = useSync();
   const updater = useUpdater();
+  const spotifyAuth = useSpotifyAuth();
   const spotifyMatch = useSpotifyMatch();
   const [flash, setFlash] = useState<string | null>(null);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -125,9 +127,12 @@ export function App(): JSX.Element {
 
       <SpotifyMatchDialog
         state={spotifyMatch.state}
+        authState={spotifyAuth.state}
         onClose={spotifyMatch.close}
         onSetRef={spotifyMatch.setRef}
         onMatch={spotifyMatch.match}
+        onConnect={() => void spotifyAuth.connect()}
+        onDisconnect={() => void spotifyAuth.disconnect()}
       />
 
       <UpdateBanner

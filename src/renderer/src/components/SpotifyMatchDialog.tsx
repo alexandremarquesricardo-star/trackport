@@ -3,32 +3,41 @@ import "./SpotifyMatchDialog.css";
 import { useDialogShortcuts } from "../hooks/useDialogShortcuts";
 import type { MatchDialogState } from "../hooks/useSpotifyMatch";
 import type { MatchErrorCode, MatchResult, MissingTrack } from "../../../shared/match";
+import type { SpotifyAuthState } from "../../../shared/spotify";
 
 interface Props {
   state: MatchDialogState;
+  authState: SpotifyAuthState;
   onClose: () => void;
   onSetRef: (ref: string) => void;
   onMatch: () => void;
+  onConnect: () => void;
+  onDisconnect: () => void;
 }
 
 export function SpotifyMatchDialog({
   state,
+  authState,
   onClose,
   onSetRef,
   onMatch,
+  onConnect,
+  onDisconnect,
 }: Props): JSX.Element | null {
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const open = state.phase !== "closed";
   const phase = state.phase;
+  const connected = authState.phase === "connected";
 
   // Esc always safe — no destructive operations here.
   // Enter triggers match when there's a non-empty URL and we're idle or
-  // showing a prior result/error (i.e. the user is iterating).
+  // showing a prior result/error (i.e. the user is iterating). Disabled
+  // when the user isn't connected to Spotify yet.
   const onEscape = open ? onClose : null;
   const onEnter =
-    open && phase !== "loading" && phase !== "closed" && state.ref.trim().length > 0
+    open && connected && phase !== "loading" && phase !== "closed" && state.ref.trim().length > 0
       ? onMatch
       : null;
 
@@ -57,52 +66,70 @@ export function SpotifyMatchDialog({
         <h2 id="spotify-match-title" className="spotify-match__title">
           Check a Spotify playlist
         </h2>
-        <p className="spotify-match__sub">
-          Paste a public playlist link, URI, or ID. We&apos;ll compare its tracks against your
-          library by filename — nothing leaves your computer except the playlist ID.
-        </p>
 
-        <form
-          className="spotify-match__form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            onMatch();
-          }}
-        >
-          <input
-            ref={inputRef}
-            type="text"
-            className="spotify-match__input"
-            placeholder="https://open.spotify.com/playlist/…"
-            value={state.ref}
-            onChange={(e) => onSetRef(e.target.value)}
-            disabled={phase === "loading"}
-            spellCheck={false}
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-          />
-          <button
-            type="submit"
-            className="spotify-match__btn spotify-match__btn--primary"
-            disabled={phase === "loading" || state.ref.trim().length === 0}
-          >
-            {phase === "loading" ? "Matching…" : "Match"}
-          </button>
-        </form>
+        {!connected ? (
+          <ConnectView authState={authState} onConnect={onConnect} />
+        ) : (
+          <>
+            <p className="spotify-match__sub">
+              Paste a playlist link, URI, or ID — including playlists only you can see. We&apos;ll
+              compare its tracks against your library by filename. Tracks themselves never leave
+              your computer.
+            </p>
 
-        {phase === "loading" && (
-          <div className="spotify-match__loading" role="status" aria-live="polite">
-            <span className="spotify-match__spinner" aria-hidden="true" />
-            Fetching the playlist and matching against your library…
-          </div>
+            <form
+              className="spotify-match__form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                onMatch();
+              }}
+            >
+              <input
+                ref={inputRef}
+                type="text"
+                className="spotify-match__input"
+                placeholder="https://open.spotify.com/playlist/…"
+                value={state.ref}
+                onChange={(e) => onSetRef(e.target.value)}
+                disabled={phase === "loading"}
+                spellCheck={false}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+              />
+              <button
+                type="submit"
+                className="spotify-match__btn spotify-match__btn--primary"
+                disabled={phase === "loading" || state.ref.trim().length === 0}
+              >
+                {phase === "loading" ? "Matching…" : "Match"}
+              </button>
+            </form>
+
+            {phase === "loading" && (
+              <div className="spotify-match__loading" role="status" aria-live="polite">
+                <span className="spotify-match__spinner" aria-hidden="true" />
+                Fetching the playlist and matching against your library…
+              </div>
+            )}
+
+            {phase === "error" && <ErrorView code={state.code} message={state.message} />}
+
+            {phase === "results" && <ResultsView result={state.result} />}
+          </>
         )}
 
-        {phase === "error" && <ErrorView code={state.code} message={state.message} />}
-
-        {phase === "results" && <ResultsView result={state.result} />}
-
         <div className="spotify-match__actions">
+          {connected && (
+            <button
+              type="button"
+              className="spotify-match__btn spotify-match__btn--linklike"
+              onClick={onDisconnect}
+              title="Forget the stored Spotify session on this computer"
+            >
+              Disconnect Spotify
+            </button>
+          )}
           <button
             type="button"
             className="spotify-match__btn spotify-match__btn--ghost"
@@ -112,6 +139,39 @@ export function SpotifyMatchDialog({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ConnectView({
+  authState,
+  onConnect,
+}: {
+  authState: SpotifyAuthState;
+  onConnect: () => void;
+}): JSX.Element {
+  const authenticating = authState.phase === "authenticating";
+  return (
+    <div className="spotify-match__connect">
+      <p className="spotify-match__sub">
+        Connect your Spotify account once so TrackPort can read the playlists you can see — public,
+        private, and Liked Songs. Spotify opens in your browser; your password never touches
+        TrackPort.
+      </p>
+      <button
+        type="button"
+        className="spotify-match__btn spotify-match__btn--primary spotify-match__btn--wide"
+        onClick={onConnect}
+        disabled={authenticating}
+      >
+        {authenticating ? "Waiting for Spotify…" : "Connect Spotify"}
+      </button>
+      {authState.phase === "error" && (
+        <div className="spotify-match__error" role="alert">
+          <div className="spotify-match__error-title">Couldn&apos;t connect</div>
+          <div className="spotify-match__error-msg">{authState.message}</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -129,18 +189,22 @@ function titleForError(code: MatchErrorCode): string {
   switch (code) {
     case "no_library":
       return "No library set";
+    case "no_auth":
+      return "Connect Spotify first";
+    case "auth_expired":
+      return "Spotify session expired — reconnect to continue";
     case "invalid_ref":
       return "Couldn't read that as a Spotify playlist";
     case "not_found":
       return "Playlist not found";
     case "access_denied":
-      return "Playlist isn't public";
-    case "broker_error":
-      return "Spotify or our broker returned an error";
+      return "No access to that playlist";
+    case "api_error":
+      return "Spotify returned an error";
     case "network_error":
-      return "Couldn't reach our broker";
+      return "Couldn't reach Spotify";
     case "timeout":
-      return "Broker took too long to respond";
+      return "Spotify took too long to respond";
   }
 }
 

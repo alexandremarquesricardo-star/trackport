@@ -330,12 +330,14 @@ export const MATCH_INTERNALS = {
  */
 export type MatchErrorCode =
   | "no_library" // user hasn't picked a music library yet
+  | "no_auth" // user hasn't connected Spotify
+  | "auth_expired" // refresh token revoked; user needs to reconnect
   | "invalid_ref" // playlist URL/URI/ID couldn't be parsed
   | "not_found" // Spotify returned 404 for the playlist
-  | "access_denied" // playlist is private / region-locked for the broker
-  | "broker_error" // broker returned an unexpected non-OK response
-  | "network_error" // couldn't reach the broker at all
-  | "timeout"; // broker took too long to respond
+  | "access_denied" // playlist is private / region-locked
+  | "api_error" // Spotify API returned an unexpected non-OK response
+  | "network_error" // couldn't reach Spotify at all
+  | "timeout"; // Spotify took too long to respond
 
 export type MatchOutcome =
   | { ok: true; result: MatchResult }
