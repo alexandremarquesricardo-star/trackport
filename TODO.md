@@ -1,13 +1,13 @@
 # TrackPort — TODO
 
 > Living plan. Update as iterations land.
-> Last updated: 2026-05-08
+> Last updated: 2026-05-11
 
 ---
 
 ## Where we are
 
-**Status:** v0.1.0 — local Electron app, 28 commits on `main`, CI green, **Windows + macOS distribution complete**, working end-to-end on Windows.
+**Status:** v0.1.0 — local Electron app, 30 commits on `main`, CI green, **Windows + macOS distribution complete**, working end-to-end on Windows. Spotify backend now has the playlist track fetcher (iteration 2 of 4). Landing site SEO-instrumented.
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -43,6 +43,9 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 25  | `aba2813`             | Auto-update runtime — electron-updater, top banner with download / restart flow  |
 | 26  | `91b2306`             | Release CI — tag-triggered Windows installer build, draft GitHub Release upload  |
 | 27  | `e5cd26a`             | macOS release CI — parallel macos-latest job, signing + notarization-ready       |
+| 28  | `9d6de8f`             | Spotify token broker on Railway + landing site `trackport.app`                   |
+| 29  | `43fd0be`             | Spotify `/spotify/playlist` endpoint — parse ref, paginate, normalize tracks     |
+| 30  | `0ebe629`             | SEO pass — OG, Twitter Card, JSON-LD SoftwareApplication, robots, sitemap        |
 
 ### What works today
 
@@ -54,6 +57,10 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 - Smart-fits oversize plans (first-fit / drop-largest)
 - Remembers per-device profile + library root across launches
 - Continues past per-file copy errors, surfaces them in the done state
+- Spotify backend has playlist track fetcher: `GET /spotify/playlist?ref=…`
+  returns normalized `{ title, artist, artists[], album, isrc, durationMs }`
+  for any public playlist (web URL / URI / raw ID); pagination + 429 retry +
+  null-track filtering all handled server-side
 - Caches the library track index (paths + sizes + mtimes) and reuses it on
   every sync — only re-stats files in directories whose mtime moved
 - "Clear device first" toggle in preflight, default ON for transmission-time
@@ -109,10 +116,20 @@ Roughly 3-4 iterations:
    <https://trackport-server-production.up.railway.app>; `/spotify/ping`
    returns a fresh 1-hour token through the broker. **TODO:** rotate the
    Client Secret (it was pasted into chat during setup).
-2. Track list fetch from Spotify URL — parse playlist URL/URI, call
-   `/v1/playlists/{id}/tracks`, return normalized `{ artist, title, album, isrc }[]`.
+2. ✅ **Playlist track list endpoint** — `GET /spotify/playlist?ref=…` accepts
+   a Spotify URL / URI / raw ID, paginates `/v1/playlists/{id}/tracks` (uses
+   the `fields` param to keep responses ~10x smaller than default), retries
+   once on 429 with `Retry-After`, filters out null tracks (removed from
+   playlist) and podcast items, returns normalized
+   `{ spotifyId, title, artist, artists[], album, isrc, durationMs }[]`.
+   Error responses use HTTP status codes that mirror Spotify's: 404 not*found,
+   403 access_denied, 502 spotify*\*, 400 invalid_ref. Hard cap at 10 000
+   tracks (Spotify's own playlist limit). Implemented in
+   [`server/src/playlist.ts`](server/src/playlist.ts).
 3. Local library matcher (artist/title fuzzy match) — runs in the desktop app
-   against the cached library index; produces `{ matched, missing }`.
+   against the cached library index; produces `{ matched, missing }`. Needs a
+   new IPC channel `library.matchAgainstSpotify(playlistUrl)` in the main
+   process that proxies to the broker and runs the fuzzy match locally.
 4. UI integration in the dialog flow.
 
 ### 2. ✅ Download website at trackport.app
@@ -160,25 +177,24 @@ in the conversation transcript. Rotate before the project sees real users:
    `curl https://trackport-server-production.up.railway.app/spotify/ping`
    (should still return `tokenAcquired: true`).
 
-### SEO + discoverability pass for trackport.app
+### SEO + discoverability pass for trackport.app — partially done
 
-Today the page has only the basic `<title>` and `<meta name="description">`.
-For a download landing page where most traffic will be from search ("sync
-music to shokz openswim", "transfer mp3 to swim headphones"), this is
-under-baked. Worth a focused 30-min pass:
+The on-page metadata is in. What's still external:
 
-- Open Graph tags (`og:title`, `og:description`, `og:image`, `og:url`) so
-  links shared on Discord / Reddit / WhatsApp render with a preview card
-- Twitter Card tags (`twitter:card`, `twitter:image`)
-- JSON-LD structured data: `SoftwareApplication` schema with
-  `applicationCategory: "Multimedia"`, `operatingSystem`, `softwareVersion`,
-  `offers.price: "0"`. This gets you rich snippets in Google.
-- `<link rel="canonical">` pointing at `https://trackport.app/`
-- `site/robots.txt` (allow all) + `site/sitemap.xml` (one URL, but having
-  it makes Google Search Console happy)
-- Submit to Google Search Console (verify via DNS TXT record at Cloudflare,
+- ✅ Open Graph tags (`og:title`, `og:description`, `og:image`, `og:url`,
+  `og:type`, `og:site_name`)
+- ✅ Twitter Card tags (`summary`, not `summary_large_image` — `icon.png` is
+  square. Revisit when a 1200x630 card image exists.)
+- ✅ JSON-LD `SoftwareApplication` schema with `applicationCategory`,
+  `operatingSystem`, `softwareVersion`, `offers.price: "0"`, MIT license.
+- ✅ `<link rel="canonical">` → `https://trackport.app/`
+- ✅ `site/robots.txt` allowing all crawlers, pointing at the sitemap
+- ✅ `site/sitemap.xml` with the single canonical URL
+- ⏳ Submit to Google Search Console (verify via DNS TXT record at Cloudflare,
   since the domain is there) and Bing Webmaster Tools
-- Run Lighthouse on the deployed site, fix anything red. Specifically watch
+- ⏳ Design a proper 1200x630 OG card image (replaces `icon.png` as
+  `og:image`/`twitter:image`; promotes Twitter Card to `summary_large_image`)
+- ⏳ Run Lighthouse on the deployed site, fix anything red. Specifically watch
   for: image dimensions on `icon.png`, font swap, contrast ratios
 
 Target: Lighthouse SEO score 100, perf >95.
