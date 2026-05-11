@@ -38,6 +38,16 @@ jobs:
           node-version: 22
           cache: npm
 
+      # Pin Python so node-gyp keeps working. Python 3.12 dropped `distutils`
+      # from the stdlib, and the node-gyp bundled inside app-builder-lib
+      # still imports it during drivelist's native rebuild. windows-latest
+      # ships 3.12+ by default, so without this the postinstall step blows
+      # up before any build work happens.
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Cache Electron download
         uses: actions/cache@v4
         with:
@@ -91,6 +101,14 @@ jobs:
         with:
           node-version: 22
           cache: npm
+
+      # Same reason as the Windows job — see comment there. macos-latest also
+      # ships Python 3.12+ by default; the bundled node-gyp inside
+      # app-builder-lib still does `from distutils.version import StrictVersion`.
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
 
       - name: Cache Electron download
         uses: actions/cache@v4
