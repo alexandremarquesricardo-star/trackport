@@ -7,7 +7,7 @@
 
 ## Where we are
 
-**Status:** v0.1.0 shipped — Win NSIS + Mac universal DMG live on GitHub Releases, trackport.app download buttons auto-fill from the GitHub API. 36 commits on `main`. **Spotify matcher arc 4/4 complete** — the wedge feature ships in the next release: user pastes a Spotify playlist link, sees what's matched and missing against their library, with "did you mean?" hints on near-misses. Acting on matched tracks (copy to device) is the natural next iteration but not strictly part of the matcher arc.
+**Status:** v0.1.0 shipped — Win NSIS + Mac universal DMG live on GitHub Releases, trackport.app download buttons auto-fill from the GitHub API. 38 commits on `main`. **Spotify matcher arc 4/4 + Path B (PKCE pivot) + Path C (paste-list fallback) complete.** Wedge feature now works against any playlist the user can see in Spotify (public, private, Liked Songs) via PKCE OAuth, with a manual paste-list mode as a no-auth fallback. Acting on matched tracks (copy to device) is the natural next iteration but a separate planner-extension concern.
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -52,6 +52,8 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 34  | `5a7e020`             | Mac: ship a single universal DMG instead of two arch-specific ones               |
 | 35  | `fbf9568`             | Library: match Spotify playlist against the local index (matcher + IPC + tests)  |
 | 36  | `70daaee`             | Paste-a-Spotify-playlist dialog — UI wired to the matcher                        |
+| 37  | `ac3b254`             | Switch to PKCE OAuth (user accounts) — broker no longer required for matching    |
+| 38  | `9a3c4d7`             | Paste-a-track-list mode — auth-free fallback (12 parser tests)                   |
 
 ### What works today
 
@@ -63,16 +65,22 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 - Smart-fits oversize plans (first-fit / drop-largest)
 - Remembers per-device profile + library root across launches
 - Continues past per-file copy errors, surfaces them in the done state
-- Spotify backend has playlist track fetcher: `GET /spotify/playlist?ref=…`
-  returns normalized `{ title, artist, artists[], album, isrc, durationMs }`
-  for any public playlist (web URL / URI / raw ID); pagination + 429 retry +
-  null-track filtering all handled server-side
-- Desktop app has `library.matchAgainstSpotify(playlistRef)` — fetches via
-  the broker, runs a pure filename-based fuzzy matcher (token-set ratio over
-  normalized title + artist, threshold 0.78) against the cached library
-  index, returns `{ matched, missing }` with best-near-miss hints. No ID3
-  parsing required — pattern-recognises `Artist - Title.mp3` flat layouts
-  and `Artist/Album/NN - Title.mp3` nested ones
+- Spotify matcher with two input modes:
+  - **Spotify URL mode** — connect once via PKCE OAuth (user logs in with
+    their own account in the system browser), then paste any playlist
+    URL/URI/ID. Reaches private playlists, Liked Songs, anything the user
+    can see in Spotify. Refresh token persisted via OS keychain
+    (Electron safeStorage). No client secret in the desktop binary —
+    PKCE design.
+  - **Paste track list mode** — flat text input, no Spotify connection
+    needed. Accepts `Artist - Title`, `Title by Artist`, numbered lists,
+    em/en-dash, tab-separated, markdown bullets, bare titles. Useful for
+    Reddit posts, emails, recommendations from non-Spotify sources.
+- Pure filename-based fuzzy matcher (token-set ratio over normalized title
+  - artist, threshold 0.78) running locally against the cached library
+    index. Returns `{ matched, missing }` with best-near-miss hints. No ID3
+    parsing required — pattern-recognises `Artist - Title.mp3` flat
+    layouts and `Artist/Album/NN - Title.mp3` nested ones
 - Caches the library track index (paths + sizes + mtimes) and reuses it on
   every sync — only re-stats files in directories whose mtime moved
 - "Clear device first" toggle in preflight, default ON for transmission-time
@@ -84,8 +92,9 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
   instead of a black window
 - Vitest unit tests covering the smart-fit logic, natural-sort behaviour,
   window-bounds validation, the incremental library scanner, the
-  auto-update state reducer, and the Spotify matcher (85 tests total,
-  including filesystem-fixture tests for the dir-mtime cache hit path)
+  auto-update state reducer, the Spotify matcher core, the PKCE helpers,
+  and the paste-list parser (106 tests total, including filesystem-fixture
+  tests for the dir-mtime cache hit path)
 - Window state (size, position, maximized) persists across launches; saved
   bounds get validated against the current monitor layout so an unplugged
   display can't strand the window off-screen
@@ -255,11 +264,21 @@ then, just a GitHub Sponsors / "Buy me a coffee" footer link is fine
 
 ## Parking lot (good ideas, not now)
 
+- **Retire the Railway broker** — the matcher no longer needs it after
+  the PKCE pivot. Saves ~$5/mo. Keep it running until the universal-DMG
+  v0.1.1 ships so the rollback path stays simple; remove after that.
+- **"Pick from your Spotify playlists" dropdown** — now that we have a
+  user token, we can call `/v1/me/playlists` and `/v1/me/tracks`. Let
+  the user pick from a dropdown instead of having to paste a URL.
+  Closes the loop on the wedge use case "match my Liked Songs."
 - **Sync matched-Spotify tracks to device** — wire the matcher's
   `matched` list into the sync planner. Needs `buildPlan` to accept a
   curated file list as an alternative to a `sourceFolder`. Closes the
   loop on the wedge: paste playlist URL → confirm matches → copy to
   device, all in one flow.
+- **Apply for Spotify Extended Quota** — once the app has a clearer
+  public face, submit to lift the 25-user Development-mode allowlist.
+  Until approved, only allowlisted users can complete the PKCE flow.
 - Multi-root libraries (`~/Music` + external drive)
 - Drag-to-reorder in preflight (manual override of natural sort)
 - Sort by ID3 track number / album metadata
