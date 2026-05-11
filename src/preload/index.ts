@@ -3,6 +3,7 @@ import type { Device } from "../shared/devices";
 import type { TrackPortApi } from "../shared/api";
 import type { FitStrategyId } from "../shared/fit";
 import type { Library } from "../shared/library";
+import type { MatchOutcome } from "../shared/match";
 import type { SyncPlan, SyncPlanId, SyncProgress } from "../shared/sync";
 import type { UpdateState } from "../shared/updater";
 
@@ -21,6 +22,7 @@ const LIBRARY_GET = "library:get";
 const LIBRARY_ADD = "library:add";
 const LIBRARY_REMOVE = "library:remove";
 const LIBRARY_RESCAN = "library:rescan";
+const LIBRARY_MATCH_AGAINST_SPOTIFY = "library:match-against-spotify";
 const UPDATER_GET_STATE = "updater:get-state";
 const UPDATER_DOWNLOAD = "updater:download";
 const UPDATER_QUIT_AND_INSTALL = "updater:quit-and-install";
@@ -68,6 +70,8 @@ const api: TrackPortApi = {
       ipcRenderer.invoke(LIBRARY_ADD, path ?? null) as Promise<Library | null>,
     remove: () => ipcRenderer.invoke(LIBRARY_REMOVE) as Promise<void>,
     rescan: () => ipcRenderer.invoke(LIBRARY_RESCAN) as Promise<Library | null>,
+    matchAgainstSpotify: (playlistRef: string) =>
+      ipcRenderer.invoke(LIBRARY_MATCH_AGAINST_SPOTIFY, playlistRef) as Promise<MatchOutcome>,
   },
   files: {
     // webUtils.getPathForFile is the supported way to extract a filesystem

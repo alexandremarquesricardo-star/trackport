@@ -1,13 +1,16 @@
 import { BrowserWindow, dialog, ipcMain } from "electron";
 import { stat } from "node:fs/promises";
 import { incrementalScan } from "./scanner";
+import { matchAgainstSpotify } from "./match-runner";
 import type { Library } from "../../shared/library";
+import type { MatchOutcome } from "../../shared/match";
 import type { LibraryStore } from "./store";
 
 export const LIBRARY_GET = "library:get";
 export const LIBRARY_ADD = "library:add";
 export const LIBRARY_REMOVE = "library:remove";
 export const LIBRARY_RESCAN = "library:rescan";
+export const LIBRARY_MATCH_AGAINST_SPOTIFY = "library:match-against-spotify";
 
 export function registerLibraryHandlers(store: LibraryStore): void {
   ipcMain.handle(LIBRARY_GET, async (): Promise<Library | null> => store.get());
@@ -66,6 +69,24 @@ export function registerLibraryHandlers(store: LibraryStore): void {
     store.applyScanResult(scan, { updateScannedAt: true });
     return store.get();
   });
+
+  ipcMain.handle(
+    LIBRARY_MATCH_AGAINST_SPOTIFY,
+    async (_event, playlistRef: unknown): Promise<MatchOutcome> => {
+      // Renderer-side type contract guarantees a string, but ipcMain runs
+      // ahead of TS so guard explicitly. matchAgainstSpotify itself also
+      // validates, but failing here gives a clearer error code at the IPC
+      // boundary than relying on internal validation.
+      if (typeof playlistRef !== "string") {
+        return {
+          ok: false,
+          code: "invalid_ref",
+          message: "playlistRef must be a string",
+        };
+      }
+      return matchAgainstSpotify(playlistRef, store);
+    },
+  );
 }
 
 async function isExistingDirectory(path: string): Promise<boolean> {

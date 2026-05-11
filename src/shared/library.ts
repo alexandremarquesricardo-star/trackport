@@ -12,6 +12,8 @@
  * for the sync pipeline's source of truth.
  */
 
+import type { MatchOutcome } from "./match";
+
 export interface Library {
   /** Absolute path to the library root folder. */
   root: string;
@@ -52,4 +54,14 @@ export interface LibraryApi {
    * to the updated library, or null if no library is set.
    */
   rescan: () => Promise<Library | null>;
+  /**
+   * Fetch a Spotify playlist via the broker and match it against the
+   * cached library index. `playlistRef` is the URL / URI / raw ID — the
+   * broker parses whichever form the user pasted.
+   *
+   * Never throws; surfaces failures via the discriminated `MatchOutcome`
+   * so the renderer can branch on `code` (no_library, invalid_ref,
+   * not_found, access_denied, broker_error, network_error, timeout).
+   */
+  matchAgainstSpotify: (playlistRef: string) => Promise<MatchOutcome>;
 }
