@@ -227,6 +227,80 @@ main {
   border: 1px solid var(--border);
 }
 
+.troubleshooting {
+  padding: 56px 0;
+  border-top: 1px solid var(--border);
+}
+.troubleshooting h2 {
+  font-size: 22px;
+  margin: 0 0 8px;
+}
+.troubleshooting__intro {
+  font-size: 14px;
+  color: var(--text-dim);
+  margin: 0 0 20px;
+}
+.troubleshooting__item {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-raised);
+  margin: 0 0 10px;
+  overflow: hidden;
+}
+.troubleshooting__item > summary {
+  padding: 14px 16px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+  position: relative;
+  padding-right: 36px;
+}
+.troubleshooting__item > summary::-webkit-details-marker {
+  display: none;
+}
+.troubleshooting__item > summary::after {
+  content: "+";
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1;
+}
+.troubleshooting__item[open] > summary::after {
+  content: "−";
+}
+.troubleshooting__item > summary:hover {
+  color: var(--accent);
+}
+.troubleshooting__body {
+  padding: 0 16px 16px;
+  font-size: 14px;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+.troubleshooting__body p {
+  margin: 0 0 10px;
+}
+.troubleshooting__body ol,
+.troubleshooting__body ul {
+  margin: 0 0 10px;
+  padding-left: 22px;
+}
+.troubleshooting__body li {
+  margin-bottom: 6px;
+}
+.troubleshooting__body code {
+  background: var(--bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  border: 1px solid var(--border);
+}
+
 .contact {
   padding: 56px 0;
   border-top: 1px solid var(--border);
@@ -239,6 +313,20 @@ main {
   font-size: 15px;
   color: var(--text-dim);
   margin: 0 0 14px;
+}
+.contact__sponsor {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 18px !important;
+  padding-top: 14px;
+  border-top: 1px dashed var(--border);
+}
+.contact__sponsor a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.contact__sponsor a:hover {
+  text-decoration: underline;
 }
 
 footer {
