@@ -1,13 +1,13 @@
 # TrackPort — TODO
 
 > Living plan. Update as iterations land.
-> Last updated: 2026-05-13 (v0.1.1 shipped)
+> Last updated: 2026-05-13 (v0.1.1 shipped; launch-prep complete; waiting on GitHub Sponsors approval before HN/Reddit posts)
 
 ---
 
 ## Where we are
 
-**Status:** v0.1.1 shipped — Win NSIS + Mac universal DMG live on GitHub Releases, trackport.app download buttons auto-fill via the GitHub API and route straight to the asset (no GitHub navigation on the user path). Repo is **public** under MIT. Support inbox `hello@trackport.app` wired via Cloudflare Email Routing → Gmail (inbound) + Resend SMTP (outbound). 46 commits on `main`. **Spotify matcher arc 4/4 + Path B (PKCE pivot) + Path C (paste-list fallback) complete, smoke-tested end-to-end.** PKCE auth round-trips cleanly. The matcher's Spotify URL path is silently gated by Spotify Premium on the developer's account (`iamricardojam`) — every playlist endpoint returns 403 without it, including the dev's own playlists. **Decision: don't subscribe.** Ship the wall, let the in-app diagnostic surface Spotify's exact reason, point users at the Paste-track-list mode as the no-friction working path. See [memory: Spotify Premium gate](../../C:/Users/rimarques/.claude/projects/d--VisualStudioCode-TrackPort/memory/project_spotify_premium_gate.md).
+**Status:** v0.1.1 shipped — Win NSIS + Mac universal DMG live on GitHub Releases, trackport.app download buttons auto-fill via the GitHub API and route straight to the asset (no GitHub navigation on the user path). Repo is **public** under MIT. Support inbox `hello@trackport.app` wired via Cloudflare Email Routing → Gmail (inbound) + Resend SMTP (outbound). Site has a 6-entry Troubleshooting FAQ + a discreet Sponsor postscript. **In-app side, queued for v0.1.2:** a sync-error translator that turns raw `EPERM`/`EACCES`/etc. into friendly messages with "Why? →" deep-links into the matching FAQ entry, plus a native Help → Troubleshooting menu. 49 commits on `main`. **Spotify matcher arc 4/4 + Path B (PKCE pivot) + Path C (paste-list fallback) complete, smoke-tested end-to-end.** PKCE auth round-trips cleanly. The matcher's Spotify URL path is silently gated by Spotify Premium on the developer's account (`iamricardojam`) — every playlist endpoint returns 403 without it, including the dev's own playlists. **Decision: don't subscribe.** Ship the wall, let the in-app diagnostic surface Spotify's exact reason, point users at the Paste-track-list mode as the no-friction working path. See [memory: Spotify Premium gate](../../C:/Users/rimarques/.claude/projects/d--VisualStudioCode-TrackPort/memory/project_spotify_premium_gate.md).
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -60,6 +60,9 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 42  | `b805855`             | Site: support contact section + `hello@trackport.app` mailto                     |
 | 43  | `aa22b1a`             | CI: inject `VITE_SPOTIFY_CLIENT_ID` so packaged builds get the real client ID    |
 | 44  | `31e835a` + tag       | **v0.1.1 release** — universal DMG, full matcher arc, error diagnostic           |
+| 45  | `6f3a045`             | Launch prep — demo GIF in hero + README, Sponsor plumbing (FUNDING.yml + footer) |
+| 46  | `ab68c4f`             | Site: self-serve Troubleshooting FAQ (6 entries) + sponsor postscript            |
+| 47  | `847f966`             | In-app sync-error translator + Help → Troubleshooting menu (queued for v0.1.2)   |
 
 ### What works today
 
@@ -222,6 +225,49 @@ compatible with publishing type` — because it tried to push vX.Y.Z
 > Workflow permissions → "Read and write permissions"** and re-run the
 > failed run. Check this any time the repo's visibility was recently
 > changed.
+
+## Launch — gated on external systems
+
+Everything we can build for the first public posts is on `main`. The launch
+itself is paused on one external dependency: GitHub Sponsors approval.
+
+### Pending
+
+- **GitHub Sponsors profile approval** (submitted 2026-05-13, typical
+  24–48h). Until it goes live, the in-site and in-README `Sponsor` links
+  resolve to a "pending" page instead of a real profile. The link is
+  shipped anyway — graceful state, not broken.
+
+### Once Sponsors is live — launch sequence (do not bundle into a single day)
+
+1. **Show HN post.** Draft + title queued (see chat history if needed; the
+   technical hook is the Shokz transmission-time fsync trick + the PKCE
+   Spotify story). Submit Tuesday or Wednesday morning ET (~14:00 UTC) for
+   maximum window. Be present for the first 3 hours to answer comments.
+2. **r/Shokz post the day after.** Smaller niche audience, no time-window
+   bonus — pick a weekday morning Lisbon time. Same engagement rule: be
+   responsive for first hours.
+
+### Then — passive discoverability work
+
+- Submit `site/sitemap.xml` to Google Search Console (DNS-TXT verify via
+  Cloudflare) and Bing Webmaster Tools
+- Submit a PR to `awesome-electron-apps` and `awesome-foss` listing
+  TrackPort. Permanent backlinks, ~30 min each.
+- Cold-email 5–10 niche YouTubers who've reviewed Shokz OpenSwim / FINIS
+  Duo. Template in chat history. Expect 1-in-10 reply.
+
+### v0.1.2 — cut when there's enough to justify
+
+Three improvements already on `main` that aren't in v0.1.1: the in-app
+sync-error translator, the Help → Troubleshooting menu, and the FUNDING.yml
+
+- Sponsor link. None are urgent on their own. Bundle with whatever drops
+  during the launch cycle (user-reported bugs, support email patterns) and
+  tag when the cumulative diff feels meaningful. Follow the **Cutting a new
+  release** procedure above — both gotchas captured.
+
+---
 
 ## Open follow-ups (when motivated)
 
