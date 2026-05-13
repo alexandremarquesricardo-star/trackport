@@ -26,7 +26,13 @@ export type SyncState =
       wipedCount: number;
       durationMs: number;
     }
-  | { phase: "error"; device: Device | null; message: string };
+  | {
+      phase: "error";
+      device: Device | null;
+      message: string;
+      hint?: string;
+      helpAnchor?: string;
+    };
 
 export interface UseSyncResult {
   state: SyncState;
@@ -80,7 +86,13 @@ export function useSync(): UseSyncResult {
             durationMs: progress.durationMs,
           };
         }
-        return { phase: "error", device, message: progress.message };
+        return {
+          phase: "error",
+          device,
+          message: progress.message,
+          hint: progress.hint,
+          helpAnchor: progress.helpAnchor,
+        };
       });
     });
   }, []);

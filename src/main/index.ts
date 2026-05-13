@@ -130,6 +130,17 @@ function registerShellHandlers(): void {
     const err = await shell.openPath(path);
     return err === "";
   });
+
+  // shell.openExternal for http/https URLs only — the "Why?" affordances on
+  // sync failures and any future "open docs" buttons go through here. Schema
+  // allowlist prevents the renderer from talking us into opening file:/// or
+  // arbitrary protocol handlers.
+  ipcMain.handle("shell:open-external", async (_event, url: unknown): Promise<boolean> => {
+    if (typeof url !== "string" || url.length === 0) return false;
+    if (!/^https?:\/\//i.test(url)) return false;
+    await shell.openExternal(url);
+    return true;
+  });
 }
 
 /**

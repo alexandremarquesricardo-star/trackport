@@ -93,6 +93,16 @@ export interface SyncFailure {
   file: string;
   /** Short human-readable reason. We strip Node's "Error:" prefix at emit. */
   message: string;
+  /**
+   * One-sentence actionable advice. Omitted when the error code is unknown
+   * or the situation is self-explanatory. See `src/shared/sync-errors.ts`.
+   */
+  hint?: string;
+  /**
+   * Anchor on `trackport.app/#...` that deep-links to the relevant
+   * troubleshooting FAQ entry. Renderer composes the full URL.
+   */
+  helpAnchor?: string;
 }
 
 export type SyncProgress =
@@ -127,7 +137,15 @@ export type SyncProgress =
       wipedCount: number;
       durationMs: number;
     }
-  | { state: "error"; message: string; copiedCount: number };
+  | {
+      state: "error";
+      message: string;
+      copiedCount: number;
+      /** Optional actionable advice for fatal errors with a known errno. */
+      hint?: string;
+      /** Optional FAQ anchor on trackport.app to deep-link from a "Why?" button. */
+      helpAnchor?: string;
+    };
 
 export interface SyncApi {
   /** Open a native folder picker. Resolves to the chosen path or null on cancel. */

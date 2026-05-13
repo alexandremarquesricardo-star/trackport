@@ -495,6 +495,8 @@ function DoneView({
               <li key={`${i}-${f.file}`} className="sync-dialog__failure">
                 <span className="sync-dialog__failure-file">{f.file}</span>
                 <span className="sync-dialog__failure-msg">{f.message}</span>
+                {f.hint && <span className="sync-dialog__failure-hint">{f.hint}</span>}
+                {f.helpAnchor && <HelpLink anchor={f.helpAnchor} />}
               </li>
             ))}
           </ul>
@@ -527,6 +529,12 @@ function ErrorView({
         Sync stopped
       </h2>
       <p className="sync-dialog__sub">{state.message}</p>
+      {state.hint && <p className="sync-dialog__error-hint">{state.hint}</p>}
+      {state.helpAnchor && (
+        <p className="sync-dialog__error-link">
+          <HelpLink anchor={state.helpAnchor} />
+        </p>
+      )}
       <div className="sync-dialog__actions">
         <button
           className="sync-dialog__btn sync-dialog__btn--primary"
@@ -537,6 +545,22 @@ function ErrorView({
         </button>
       </div>
     </>
+  );
+}
+
+const TROUBLESHOOTING_BASE = "https://trackport.app/#";
+
+function HelpLink({ anchor }: { anchor: string }): JSX.Element {
+  return (
+    <button
+      type="button"
+      className="sync-dialog__why"
+      onClick={() => {
+        void window.api.files.openExternalUrl(`${TROUBLESHOOTING_BASE}${anchor}`);
+      }}
+    >
+      Why? →
+    </button>
   );
 }
 

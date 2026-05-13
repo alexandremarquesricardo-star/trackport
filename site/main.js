@@ -138,8 +138,27 @@ async function init() {
   }
 }
 
+// Expand <details> elements when the URL fragment matches their id, so
+// deep-links from the app's "Why?" affordances land on the right answer
+// already open. Chromium 105+ does this natively; this is the cross-browser
+// fallback (Firefox older than 109, Safari, etc.).
+function expandHashTarget() {
+  const id = window.location.hash.slice(1);
+  if (!id) return;
+  const el = document.getElementById(id);
+  if (el instanceof HTMLDetailsElement && !el.open) {
+    el.open = true;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+window.addEventListener("hashchange", expandHashTarget);
+
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init);
+  document.addEventListener("DOMContentLoaded", () => {
+    init();
+    expandHashTarget();
+  });
 } else {
   init();
+  expandHashTarget();
 }

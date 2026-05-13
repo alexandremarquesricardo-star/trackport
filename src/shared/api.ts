@@ -21,6 +21,12 @@ export interface FilesApi {
    * inaccessible or the OS shell rejects it.
    */
   openInFileManager: (path: string) => Promise<boolean>;
+  /**
+   * Open an http/https URL in the user's default browser. Used by the
+   * "Why?" deep-links on sync failures and similar in-app docs jumps.
+   * Schema is allowlisted to http(s) only in the main-process handler.
+   */
+  openExternalUrl: (url: string) => Promise<boolean>;
 }
 
 /**

@@ -1,4 +1,6 @@
-import { app, Menu, type MenuItemConstructorOptions } from "electron";
+import { app, Menu, shell, type MenuItemConstructorOptions } from "electron";
+
+const TROUBLESHOOTING_URL = "https://trackport.app/#troubleshooting";
 
 /**
  * The user-facing app name. Hardcoded — we deliberately don't call
@@ -89,21 +91,31 @@ export function buildAppMenu(): Menu {
       : [{ role: "minimize" }, { role: "zoom" }, { role: "close" }],
   };
 
-  // Mac surfaces About via the app menu, so the Help menu collapses to
-  // nothing on Mac and we drop it entirely.
-  const helpMenu: MenuItemConstructorOptions | null = isMac
-    ? null
-    : {
-        label: "&Help",
-        submenu: [
-          {
-            label: "About TrackPort",
-            click: (): void => {
-              app.showAboutPanel();
+  // Mac surfaces About via the app menu (so it doesn't appear here too),
+  // but we still want a Help menu on every platform for Troubleshooting.
+  const helpMenu: MenuItemConstructorOptions = {
+    label: "&Help",
+    role: "help",
+    submenu: [
+      {
+        label: "Troubleshooting…",
+        click: (): void => {
+          void shell.openExternal(TROUBLESHOOTING_URL);
+        },
+      },
+      ...(isMac
+        ? []
+        : [
+            { type: "separator" as const },
+            {
+              label: "About TrackPort",
+              click: (): void => {
+                app.showAboutPanel();
+              },
             },
-          },
-        ],
-      };
+          ]),
+    ],
+  };
 
   const template: MenuItemConstructorOptions[] = [
     ...(isMac ? [macAppMenu] : []),
@@ -111,7 +123,7 @@ export function buildAppMenu(): Menu {
     editMenu,
     viewMenu,
     windowMenu,
-    ...(helpMenu ? [helpMenu] : []),
+    helpMenu,
   ];
 
   return Menu.buildFromTemplate(template);

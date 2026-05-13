@@ -3,6 +3,7 @@ import { copyFile, open, stat, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { getProfile } from "../../shared/profiles";
+import { hintForErrno, translateSyncError } from "../../shared/sync-errors";
 import type { SyncFailure, SyncPlan, SyncPlanId, SyncProgress } from "../../shared/sync";
 import { scanAudioFiles } from "./audio-scan";
 
@@ -137,14 +138,23 @@ export class SyncExecutor extends EventEmitter {
       } catch (err) {
         const code = (err as NodeJS.ErrnoException | undefined)?.code;
         if (code && FATAL_ERRNO.has(code)) {
+          const hint = hintForErrno(code);
           this.emitProgress({
             state: "error",
             message: fatalMessage(code, copiedCount),
             copiedCount,
+            hint: hint?.hint,
+            helpAnchor: hint?.helpAnchor,
           });
           return;
         }
-        failures.push({ file: file.name, message: shortMessage(err) });
+        const translated = translateSyncError(err);
+        failures.push({
+          file: file.name,
+          message: translated.message,
+          hint: translated.hint,
+          helpAnchor: translated.helpAnchor,
+        });
       }
     }
 
@@ -197,9 +207,12 @@ export class SyncExecutor extends EventEmitter {
       } catch (err) {
         const code = (err as NodeJS.ErrnoException | undefined)?.code;
         if (code === "ENOENT") continue; // raced with another delete — fine
+        const translated = translateSyncError(err);
         failures.push({
           file: file.name,
-          message: `Couldn't clear: ${shortMessage(err)}`,
+          message: `Couldn't clear: ${translated.message}`,
+          hint: translated.hint,
+          helpAnchor: translated.helpAnchor,
         });
       }
     }
@@ -227,11 +240,6 @@ async function fsyncFile(path: string): Promise<void> {
   } finally {
     await handle.close();
   }
-}
-
-function shortMessage(err: unknown): string {
-  if (err instanceof Error) return err.message.replace(/^Error:\s*/, "");
-  return String(err);
 }
 
 function fatalMessage(code: string, copiedCount: number): string {

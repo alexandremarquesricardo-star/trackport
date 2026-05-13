@@ -11,6 +11,7 @@ import type { UpdateState } from "../shared/updater";
 const DEVICES_LIST_CHANNEL = "devices:list";
 const DEVICES_CHANGED_CHANNEL = "devices:changed";
 const SHELL_OPEN_PATH = "shell:open-path";
+const SHELL_OPEN_EXTERNAL = "shell:open-external";
 const SYNC_PICK_FOLDER = "sync:pick-folder";
 const SYNC_BUILD_PLAN = "sync:build-plan";
 const SYNC_APPLY_FIT = "sync:apply-fit";
@@ -88,6 +89,8 @@ const api: TrackPortApi = {
     pathForFile: (file: File): string => webUtils.getPathForFile(file),
     openInFileManager: (path: string) =>
       ipcRenderer.invoke(SHELL_OPEN_PATH, path) as Promise<boolean>,
+    openExternalUrl: (url: string) =>
+      ipcRenderer.invoke(SHELL_OPEN_EXTERNAL, url) as Promise<boolean>,
   },
   updater: {
     getState: () => ipcRenderer.invoke(UPDATER_GET_STATE) as Promise<UpdateState>,

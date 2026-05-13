@@ -210,7 +210,7 @@ errors. Follow this sequence verbatim:
 > electron-builder reads the artifact version and target release from
 > `package.json`, not the git tag. Skip the bump and the workflow
 > returns green but every upload is skipped with `existing type not
-> compatible with publishing type` — because it tried to push vX.Y.Z
+compatible with publishing type` — because it tried to push vX.Y.Z
 > artifacts into the previous version's released tag.
 
 > ⚠️ **Gotcha 2: visibility flips reset Actions workflow permissions**

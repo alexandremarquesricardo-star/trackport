@@ -90,7 +90,12 @@
           don&apos;t stream. Pick the device. Sync your library. Copy. That&apos;s it.
         </p>
 
-        <img class="hero-demo" src="demo.gif" alt="TrackPort: pick a device, tap Sync library, tap Copy." loading="lazy" />
+        <img
+          class="hero-demo"
+          src="demo.gif"
+          alt="TrackPort: pick a device, tap Sync library, tap Copy."
+          loading="lazy"
+        />
 
         <div class="downloads">
           <a id="primary-download" class="btn-primary" href="#" rel="noopener">
@@ -167,45 +172,47 @@
         </p>
       </section>
 
-      <section class="troubleshooting">
+      <section class="troubleshooting" id="troubleshooting">
         <h2>Common issues</h2>
         <p class="troubleshooting__intro">
           Things real users hit. If yours isn&apos;t listed, email me — it probably should be.
         </p>
 
-        <details class="troubleshooting__item">
+        <details class="troubleshooting__item" id="device-not-recognized">
           <summary>The device doesn&apos;t show up when I plug it in</summary>
           <div class="troubleshooting__body">
             <p>In likelihood order:</p>
             <ol>
               <li>
-                <strong>Wet or dirty charging contacts.</strong> Especially on Shokz OpenSwim
-                and OpenSwim Pro. Wipe the contacts on both the cable and the device with a dry
-                cloth. Salt and chlorine corrode the magnetic connection.
+                <strong>Wet or dirty charging contacts.</strong> Especially on Shokz OpenSwim and
+                OpenSwim Pro. Wipe the contacts on both the cable and the device with a dry cloth.
+                Salt and chlorine corrode the magnetic connection.
               </li>
               <li>
                 <strong>Device not in disk mode.</strong> On OpenSwim Pro, hold the Volume + (or
                 power) button for 5–10 seconds after plugging in to force disk mode.
               </li>
               <li>
-                <strong>Cable or port issue.</strong> Try a different USB port — ideally
-                straight into the computer, not through a hub. The factory cable is wear-prone;
-                a known-good replacement often fixes it.
+                <strong>Cable or port issue.</strong> Try a different USB port — ideally straight
+                into the computer, not through a hub. The factory cable is wear-prone; a known-good
+                replacement often fixes it.
               </li>
               <li>
-                <strong>macOS only.</strong> If it appeared once and stopped, empty the Trash
-                first — macOS holds files that block the device from re-mounting.
+                <strong>macOS only.</strong> If it appeared once and stopped, empty the Trash first
+                — macOS holds files that block the device from re-mounting.
               </li>
             </ol>
           </div>
         </details>
 
-        <details class="troubleshooting__item">
-          <summary>Sync fails with &quot;EPERM&quot; or &quot;permission denied&quot; on every file</summary>
+        <details class="troubleshooting__item" id="eperm">
+          <summary>
+            Sync fails with &quot;EPERM&quot; or &quot;permission denied&quot; on every file
+          </summary>
           <div class="troubleshooting__body">
             <p>
-              Windows has mounted the device read-only. Common after a dirty unmount (the device
-              was unplugged without &quot;Safely Remove Hardware&quot;) or a power blip during a
+              Windows has mounted the device read-only. Common after a dirty unmount (the device was
+              unplugged without &quot;Safely Remove Hardware&quot;) or a power blip during a
               previous sync.
             </p>
             <p>Fixes, in order:</p>
@@ -216,8 +223,8 @@
               </li>
               <li>
                 From an admin PowerShell, run <code>chkdsk X: /f</code> (replace <code>X:</code>
-                with your device&apos;s drive letter). This repairs filesystem flags that pin
-                the volume read-only.
+                with your device&apos;s drive letter). This repairs filesystem flags that pin the
+                volume read-only.
               </li>
             </ol>
             <p>
@@ -227,20 +234,20 @@
           </div>
         </details>
 
-        <details class="troubleshooting__item">
+        <details class="troubleshooting__item" id="wrong-order">
           <summary>Tracks are playing in the wrong order on my Shokz</summary>
           <div class="troubleshooting__body">
             <p>This is what TrackPort is built to fix. If it&apos;s still happening:</p>
             <ol>
               <li>
-                <strong>Check the device is in Normal mode, not Shuffle.</strong> On OpenSwim
-                Pro, hold the multifunction button + Volume + for 2 seconds in MP3 mode — Audrey
-                says &quot;Normal&quot; / &quot;Shuffle&quot; / &quot;Repeat&quot; as you cycle.
+                <strong>Check the device is in Normal mode, not Shuffle.</strong> On OpenSwim Pro,
+                hold the multifunction button + Volume + for 2 seconds in MP3 mode — Audrey says
+                &quot;Normal&quot; / &quot;Shuffle&quot; / &quot;Repeat&quot; as you cycle.
               </li>
               <li>
-                <strong>Make sure &quot;Clear device first&quot; is on.</strong> Leftover files
-                from previous syncs interleave with the new order. TrackPort defaults this to
-                ON for Shokz devices.
+                <strong>Make sure &quot;Clear device first&quot; is on.</strong> Leftover files from
+                previous syncs interleave with the new order. TrackPort defaults this to ON for
+                Shokz devices.
               </li>
               <li>
                 <strong>Power-cycle the device after sync.</strong> Some firmware versions only
@@ -250,64 +257,65 @@
           </div>
         </details>
 
-        <details class="troubleshooting__item">
+        <details class="troubleshooting__item" id="finis-formats">
           <summary>FINIS Duo: some tracks are skipped or won&apos;t play</summary>
           <div class="troubleshooting__body">
-            <p>
-              The Duo plays unprotected MP3 and WMA only. Common files it rejects:
-            </p>
+            <p>The Duo plays unprotected MP3 and WMA only. Common files it rejects:</p>
             <ul>
-              <li><code>.m4a</code> / <code>.aac</code> (iTunes-purchased and Apple Music exports)</li>
-              <li><code>.flac</code>, <code>.wav</code>, <code>.ogg</code> (lossless and open formats)</li>
+              <li>
+                <code>.m4a</code> / <code>.aac</code> (iTunes-purchased and Apple Music exports)
+              </li>
+              <li>
+                <code>.flac</code>, <code>.wav</code>, <code>.ogg</code> (lossless and open formats)
+              </li>
               <li>DRM-protected files from any service</li>
             </ul>
             <p>
               TrackPort filters formats per device profile — anything the Duo can&apos;t play is
-              skipped at preflight, not copied. If the device still won&apos;t play files you
-              expect to work, the source MP3 may be unusually encoded (very low VBR, exotic
-              codec settings). Re-encode the source to standard CBR MP3 and try again.
+              skipped at preflight, not copied. If the device still won&apos;t play files you expect
+              to work, the source MP3 may be unusually encoded (very low VBR, exotic codec
+              settings). Re-encode the source to standard CBR MP3 and try again.
             </p>
           </div>
         </details>
 
-        <details class="troubleshooting__item">
+        <details class="troubleshooting__item" id="spotify-premium">
           <summary>&quot;Connect Spotify&quot; fails with a 403 / Premium required</summary>
           <div class="troubleshooting__body">
             <p>
-              Spotify&apos;s API quietly gates every playlist endpoint behind dev-account
-              Premium while TrackPort is in Development Mode. This affects everyone, not just
-              you, until TrackPort gets Extended Quota approval from Spotify.
+              Spotify&apos;s API quietly gates every playlist endpoint behind dev-account Premium
+              while TrackPort is in Development Mode. This affects everyone, not just you, until
+              TrackPort gets Extended Quota approval from Spotify.
             </p>
             <p>
-              <strong>Working alternative:</strong> use the <strong>Paste track list</strong> tab
-              in the same dialog. Paste a flat list of tracks (any format — <code>Artist - Title</code>,
-              <code>Title by Artist</code>, numbered lists, tab-separated, markdown bullets) and
-              TrackPort matches them against your local library. No Spotify connection needed,
-              same matching engine, identical results UI.
+              <strong>Working alternative:</strong> use the <strong>Paste track list</strong> tab in
+              the same dialog. Paste a flat list of tracks (any format —
+              <code>Artist - Title</code>, <code>Title by Artist</code>, numbered lists,
+              tab-separated, markdown bullets) and TrackPort matches them against your local
+              library. No Spotify connection needed, same matching engine, identical results UI.
             </p>
           </div>
         </details>
 
-        <details class="troubleshooting__item">
+        <details class="troubleshooting__item" id="install-warning">
           <summary>Scary &quot;unknown publisher&quot; warning on first install</summary>
           <div class="troubleshooting__body">
             <p>
-              The installers are unsigned for now (Authenticode certs on Windows are ~€300/yr,
-              Apple Developer Program is €99/yr — both on the roadmap as the project finds
-              users). Click through:
+              The installers are unsigned for now (Authenticode certs on Windows are ~€300/yr, Apple
+              Developer Program is €99/yr — both on the roadmap as the project finds users). Click
+              through:
             </p>
             <ul>
               <li>
-                <strong>Windows SmartScreen:</strong> &quot;More info&quot; → &quot;Run anyway&quot;.
-                The warning never reappears for that installer.
+                <strong>Windows SmartScreen:</strong> &quot;More info&quot; → &quot;Run
+                anyway&quot;. The warning never reappears for that installer.
               </li>
               <li>
                 <strong>macOS Gatekeeper:</strong> right-click TrackPort.app → &quot;Open&quot; →
                 confirm. This permanently allows that specific app.
               </li>
               <li>
-                <strong>Linux AppImage:</strong> <code>chmod +x TrackPort-*.AppImage</code> and
-                run.
+                <strong>Linux AppImage:</strong> <code>chmod +x TrackPort-*.AppImage</code> and run.
               </li>
             </ul>
           </div>
