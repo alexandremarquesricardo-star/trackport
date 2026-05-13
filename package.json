@@ -1,6 +1,6 @@
 {
   "name": "trackport",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Get your music from where it lives onto your offline device. Cross-platform sync tool for swim headphones, USB MP3 players, and similar offline audio devices.",
   "main": "./out/main/index.js",
