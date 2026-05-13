@@ -1,13 +1,13 @@
 # TrackPort — TODO
 
 > Living plan. Update as iterations land.
-> Last updated: 2026-05-13 (smoke tests passed; next: wire CI secret + tag v0.1.1)
+> Last updated: 2026-05-13 (v0.1.1 shipped)
 
 ---
 
 ## Where we are
 
-**Status:** v0.1.0 shipped — Win NSIS + Mac universal DMG live on GitHub Releases, trackport.app download buttons auto-fill from the GitHub API. 40 commits on `main`. **Spotify matcher arc 4/4 + Path B (PKCE pivot) + Path C (paste-list fallback) complete and verified end-to-end.** PKCE auth round-trips cleanly. The matcher's Spotify URL path is silently gated by Spotify Premium on the developer's account (`iamricardojam`) — every playlist endpoint returns 403 without it, including the dev's own playlists. **Decision: don't subscribe.** Ship the wall, let the in-app diagnostic surface Spotify's exact reason, point users at the Paste-track-list mode as the no-friction working path. See [memory: Spotify Premium gate](../../C:/Users/rimarques/.claude/projects/d--VisualStudioCode-TrackPort/memory/project_spotify_premium_gate.md).
+**Status:** v0.1.1 shipped — Win NSIS + Mac universal DMG live on GitHub Releases, trackport.app download buttons auto-fill via the GitHub API and route straight to the asset (no GitHub navigation on the user path). Repo is **public** under MIT. Support inbox `hello@trackport.app` wired via Cloudflare Email Routing → Gmail (inbound) + Resend SMTP (outbound). 46 commits on `main`. **Spotify matcher arc 4/4 + Path B (PKCE pivot) + Path C (paste-list fallback) complete, smoke-tested end-to-end.** PKCE auth round-trips cleanly. The matcher's Spotify URL path is silently gated by Spotify Premium on the developer's account (`iamricardojam`) — every playlist endpoint returns 403 without it, including the dev's own playlists. **Decision: don't subscribe.** Ship the wall, let the in-app diagnostic surface Spotify's exact reason, point users at the Paste-track-list mode as the no-friction working path. See [memory: Spotify Premium gate](../../C:/Users/rimarques/.claude/projects/d--VisualStudioCode-TrackPort/memory/project_spotify_premium_gate.md).
 
 The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 **pick device → tap Sync library → tap Copy.**
@@ -56,6 +56,10 @@ The 3-tap thesis is real and reduces to ~2 taps when a library is set:
 | 38  | `9a3c4d7`             | Paste-a-track-list mode — auth-free fallback (12 parser tests)                   |
 | 39  | `8c7df10`             | TODO bookkeeping for paths B+C                                                   |
 | 40  | `5fa9a63`             | Spotify API errors now surface Spotify's actual response body (saved €132/yr)    |
+| 41  | `313136b`             | Site: no GitHub touchpoints around the download CTA (direct OS-aware download)   |
+| 42  | `b805855`             | Site: support contact section + `hello@trackport.app` mailto                     |
+| 43  | `aa22b1a`             | CI: inject `VITE_SPOTIFY_CLIENT_ID` so packaged builds get the real client ID    |
+| 44  | `31e835a` + tag       | **v0.1.1 release** — universal DMG, full matcher arc, error diagnostic           |
 
 ### What works today
 
@@ -188,57 +192,38 @@ also wired (apex + www both resolve).
 
 ---
 
-## Open follow-ups (next session — pick up here tomorrow)
+## Cutting a new release (procedure + gotchas)
 
-### Smoke-test what we shipped
+The release workflow is sensitive to two things that don't show up as
+errors. Follow this sequence verbatim:
 
-The PKCE auth flow + diagnostic surfacing were verified end-to-end this
-session (the diagnostic revealed the Premium gate — that's the proof both
-worked). Still untested under real conditions:
+1. Smoke-test critical paths on `main`
+2. `npm version X.Y.Z --no-git-tag-version` (bumps `package.json` +
+   `package-lock.json`; the flag stops it from auto-tagging)
+3. `git add package.json package-lock.json && git commit -m "chore: bump version to X.Y.Z"`
+4. `git tag vX.Y.Z`
+5. `git push origin main && git push origin vX.Y.Z`
+6. Workflow fires (~8 min); a **draft** v-tagged release lands on GitHub
+7. UI: edit the draft → "Generate release notes" → Publish
 
-- ✅ PKCE login → browser callback → token storage → reconnection across
-  app restarts
-- ✅ Spotify URL mode → 403 with `Premium required` (working as designed
-  given the gate)
-- ✅ **Paste track list mode end-to-end** — verified 2026-05-13. Tab
-  switch → textarea → IPC roundtrip → summary + missing-section render
-  all work. Did-you-mean hint surfaces correctly (bare title "Blackout"
-  → suggested "Blackout Steam.mp3"). Bare-title scoring lands under the
-  0.78 threshold as designed, which is what makes the hint useful.
-- ✅ Auth persistence smoke — verified 2026-05-13. Dev session reopened
-  this morning with the dialog already showing "Disconnect Spotify",
-  meaning the `safeStorage`-encrypted refresh token survived prior
-  app/system restart.
+> ⚠️ **Gotcha 1: bump `package.json` BEFORE tagging** (learned 2026-05-13).
+> electron-builder reads the artifact version and target release from
+> `package.json`, not the git tag. Skip the bump and the workflow
+> returns green but every upload is skipped with `existing type not
+> compatible with publishing type` — because it tried to push vX.Y.Z
+> artifacts into the previous version's released tag.
 
-### Wire `VITE_SPOTIFY_CLIENT_ID` into release CI
+> ⚠️ **Gotcha 2: visibility flips reset Actions workflow permissions**
+> (learned 2026-05-13). When the repo changes visibility (private ⇄
+> public), GitHub silently resets Actions workflow permissions to the
+> restrictive default. That makes `electron-builder --publish always`
+> hang silently on the `creating GitHub release` step — exit 0, no
+> error, no draft, no assets. Fix at **Settings → Actions → General →
+> Workflow permissions → "Read and write permissions"** and re-run the
+> failed run. Check this any time the repo's visibility was recently
+> changed.
 
-Required before tagging v0.1.1 if we want URL mode to work in shipped
-builds. Without this, packaged binaries have the placeholder client ID
-and Connect Spotify errors immediately.
-
-1. Repo Settings → Secrets and variables → Actions → New secret:
-   `VITE_SPOTIFY_CLIENT_ID` with the value from `.env.local`.
-2. Edit `.github/workflows/release.yml` — in both the Windows and macOS
-   jobs, add to the `Bundle app (electron-vite)` step's `env:` block:
-   ```yaml
-   env:
-     VITE_SPOTIFY_CLIENT_ID: ${{ secrets.VITE_SPOTIFY_CLIENT_ID }}
-   ```
-3. Same env injection on the `Build + publish` step is harmless and
-   guards against electron-vite reading env at the wrong stage.
-
-### Tag v0.1.1
-
-Ships everything since v0.1.0:
-
-- Universal macOS DMG (commit `5a7e020`) — fixes the Intel-Mac arch
-  mismatch from v0.1.0 splitting into arm64+x64
-- Full Spotify matcher arc (commits `fbf9568`, `70daaee`, `ac3b254`,
-  `9a3c4d7`) — PKCE OAuth + paste-track-list mode
-- Spotify API error diagnostic (commit `5fa9a63`) — surfaces Premium
-  gate / scope issues / etc. to the user
-
-Sequence: smoke-test → wire CLIENT_ID secret → `git tag v0.1.1 && git push origin v0.1.1`.
+## Open follow-ups (when motivated)
 
 ### "Pick from your Spotify playlists" dropdown — IF we re-enable URL mode
 
@@ -248,23 +233,6 @@ removed). On hold pending that decision.
 ---
 
 ## Open follow-ups (other items, lower priority)
-
-### Cut first published release v0.1.0
-
-The release workflow is wired but no tag has been pushed yet, so
-`/releases/latest` returns 404 and the site's download buttons fall back
-to the all-releases page. Steps:
-
-```sh
-git tag v0.1.0
-git push origin v0.1.0
-```
-
-That triggers `.github/workflows/release.yml` — Win + Mac jobs build in
-parallel (~10 min), upload installers + auto-update sidecars to a draft
-Release. Then on github.com → Releases → Edit the draft → "Generate
-release notes" → "Publish release". The moment it's published (not draft),
-trackport.app's download buttons auto-fill with direct asset URLs.
 
 ### Rotate Spotify Client Secret
 
