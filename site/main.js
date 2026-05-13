@@ -3,12 +3,11 @@
 // match installer/DMG/AppImage by extension and set the right href without
 // hardcoding a version that goes stale every release.
 //
-// Network failure / rate limit fallback: every button still points at the
-// repo's /releases page, so the page is always usable even if api.github.com
-// is unreachable.
+// On failure (network / rate limit / no releases yet) the buttons are
+// disabled and the version line shows an unavailable state — we don't bounce
+// users to github.com/.../releases, the page is the destination.
 
 const REPO = "alexandremarquesricardo-star/trackport";
-const RELEASES_URL = `https://github.com/${REPO}/releases`;
 const API_URL = `https://api.github.com/repos/${REPO}/releases/latest`;
 
 const PLATFORM_MATCHERS = {
@@ -51,12 +50,23 @@ function pickAsset(assets, platform) {
   );
 }
 
+function disableButton(btn) {
+  if (!btn) return;
+  btn.removeAttribute("href");
+  btn.setAttribute("aria-disabled", "true");
+}
+
 function setSecondaryButtons(release) {
   const buttons = document.querySelectorAll("[data-platform]");
   buttons.forEach((btn) => {
     const platform = btn.getAttribute("data-platform");
     const asset = release ? pickAsset(release.assets, platform) : null;
-    btn.href = asset?.browser_download_url ?? RELEASES_URL;
+    if (asset) {
+      btn.href = asset.browser_download_url;
+      btn.removeAttribute("aria-disabled");
+    } else {
+      disableButton(btn);
+    }
   });
 }
 
@@ -72,8 +82,7 @@ function setPrimary(release, platform) {
     primary.href = asset.browser_download_url;
     primary.removeAttribute("aria-disabled");
   } else {
-    primary.href = RELEASES_URL;
-    primary.removeAttribute("aria-disabled");
+    disableButton(primary);
   }
 }
 
@@ -81,7 +90,7 @@ function setVersion(release, hasError) {
   const el = document.getElementById("version-display");
   if (!el) return;
   if (hasError) {
-    el.textContent = "Latest release on GitHub";
+    el.textContent = "Download temporarily unavailable — please refresh";
     return;
   }
   if (!release) {

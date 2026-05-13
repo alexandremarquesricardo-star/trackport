@@ -160,6 +160,11 @@ main {
   text-decoration: none;
   color: var(--text);
 }
+.btn-secondary[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 
 .features {
   padding: 56px 0;
