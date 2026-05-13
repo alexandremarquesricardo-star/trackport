@@ -1,7 +1,7 @@
 # TrackPort — TODO
 
 > Living plan. Update as iterations land.
-> Last updated: 2026-05-11
+> Last updated: 2026-05-13
 
 ---
 
@@ -239,15 +239,6 @@ Ships everything since v0.1.0:
 
 Sequence: smoke-test → wire CLIENT_ID secret → `git tag v0.1.1 && git push origin v0.1.1`.
 
-### Retire the Railway broker
-
-After v0.1.1 ships and the rollback path is no longer needed, delete the
-`server/` directory + the Railway service. Saves €5/mo. The desktop app
-calls Spotify directly via PKCE — broker has zero readers.
-
-Move "Rotate Spotify Client Secret" off the list — secret rotation
-becomes irrelevant once the broker (which holds it) is retired.
-
 ### "Pick from your Spotify playlists" dropdown — IF we re-enable URL mode
 
 Only meaningful once Spotify URL mode actually works (Premium gate
@@ -333,9 +324,11 @@ then, just a GitHub Sponsors / "Buy me a coffee" footer link is fine
 
 ## Parking lot (good ideas, not now)
 
-- **Retire the Railway broker** — the matcher no longer needs it after
-  the PKCE pivot. Saves ~$5/mo. Keep it running until the universal-DMG
-  v0.1.1 ships so the rollback path stays simple; remove after that.
+- **Retire the Railway broker** — on hold. The matcher no longer needs
+  it after the PKCE pivot, but Railway is already part of the stack for
+  other apps, so the ~€5/mo isn't worth losing the rollback path. Keep
+  it running; revisit only if it accrues maintenance cost or the Railway
+  setup changes.
 - **"Pick from your Spotify playlists" dropdown** — now that we have a
   user token, we can call `/v1/me/playlists` and `/v1/me/tracks`. Let
   the user pick from a dropdown instead of having to paste a URL.
