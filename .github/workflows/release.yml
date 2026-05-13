@@ -77,6 +77,11 @@ jobs:
         # we call electron-vite directly instead of `npm run build`
         # (which would re-typecheck).
         run: npx electron-vite build
+        env:
+          # Baked into the renderer at build time via import.meta.env.
+          # Without this, packaged binaries get the "REPLACE_WITH_..."
+          # placeholder and Connect Spotify fails at first launch.
+          VITE_SPOTIFY_CLIENT_ID: ${{ secrets.VITE_SPOTIFY_CLIENT_ID }}
 
       - name: Build + publish Windows installer
         # `electron-builder --publish always` builds the NSIS installer,
@@ -105,6 +110,10 @@ jobs:
           WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Belt-and-braces — already injected at the bundle step above.
+          # Harmless if electron-builder spawns a sub-process that
+          # re-reads import.meta.env (rare but possible with custom hooks).
+          VITE_SPOTIFY_CLIENT_ID: ${{ secrets.VITE_SPOTIFY_CLIENT_ID }}
 
   macos:
     name: macOS DMG
@@ -151,6 +160,8 @@ jobs:
         # See the matching step in the Windows job. Produces the out/
         # tree electron-builder packages into the .app bundle.
         run: npx electron-vite build
+        env:
+          VITE_SPOTIFY_CLIENT_ID: ${{ secrets.VITE_SPOTIFY_CLIENT_ID }}
 
       - name: Build + publish macOS DMG
         # Universal arm64 + x64 DMG per electron-builder.yml, plus the
@@ -187,3 +198,5 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Same guard as the Windows job. See note there.
+          VITE_SPOTIFY_CLIENT_ID: ${{ secrets.VITE_SPOTIFY_CLIENT_ID }}
