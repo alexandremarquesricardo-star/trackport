@@ -1,7 +1,7 @@
 # TrackPort — TODO
 
 > Living plan. Update as iterations land.
-> Last updated: 2026-05-13
+> Last updated: 2026-05-13 (smoke tests passed; next: wire CI secret + tag v0.1.1)
 
 ---
 
@@ -200,14 +200,15 @@ worked). Still untested under real conditions:
   app restarts
 - ✅ Spotify URL mode → 403 with `Premium required` (working as designed
   given the gate)
-- ⏳ **Paste track list mode end-to-end** — never tested. The matcher core
-  has 106 unit tests, but the UI path (tab switch → textarea → match →
-  results render) hasn't been exercised. Pick a few tracks from the local
-  library, paste them in, confirm matched count > 0. This is the actual
-  user-facing wedge feature given the Premium gate.
-- ⏳ Auth persistence smoke — kill TrackPort after connecting, relaunch,
-  confirm it's still "connected" without a fresh login. Tests the
-  `safeStorage`-encrypted refresh-token path.
+- ✅ **Paste track list mode end-to-end** — verified 2026-05-13. Tab
+  switch → textarea → IPC roundtrip → summary + missing-section render
+  all work. Did-you-mean hint surfaces correctly (bare title "Blackout"
+  → suggested "Blackout Steam.mp3"). Bare-title scoring lands under the
+  0.78 threshold as designed, which is what makes the hint useful.
+- ✅ Auth persistence smoke — verified 2026-05-13. Dev session reopened
+  this morning with the dialog already showing "Disconnect Spotify",
+  meaning the `safeStorage`-encrypted refresh token survived prior
+  app/system restart.
 
 ### Wire `VITE_SPOTIFY_CLIENT_ID` into release CI
 
