@@ -4,6 +4,10 @@
 
 > Get your music from where it lives onto your offline device. Three taps.
 
+![TrackPort demo](site/demo.gif)
+
+**Download:** [trackport.app](https://trackport.app) · **Windows + macOS · Linux soon**
+
 TrackPort is a cross-platform tool that bridges your personal audio library to offline playback devices — swim headphones (Shokz OpenSwim, FINIS Duo, H2O Audio), USB MP3 players, and similar gear that needs files on disk rather than streams.
 
 ## Why TrackPort
@@ -27,7 +31,7 @@ TrackPort is the first app to treat the **transfer event** as a first-class prod
 ## Stack
 
 - **Desktop:** Electron + React + TypeScript + Vite (electron-vite)
-- **Tests:** Vitest (53 tests covering the smart-fit logic, natural-sort, window-bounds validator, the incremental library scanner, and the auto-update state reducer)
+- **Tests:** Vitest (106 tests covering the smart-fit logic, natural-sort, window-bounds validator, the incremental library scanner, the auto-update state reducer, the Spotify matcher core, PKCE helpers, and the paste-list parser)
 - **CI/CD:** GitHub Actions (lint + format-check + tests + typecheck + build on every push); GitHub Releases for desktop binaries
 - **Backend (planned):** Node.js + Hono on Railway (Spotify metadata matcher only)
 - **Mobile (future):** Android via React Native — iOS is largely blocked by Apple's USB MSC restrictions
